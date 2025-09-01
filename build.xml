@@ -1,41 +1,60 @@
-<project name="print-job-tracker" default="compile" xmlns:ivy="antlib:org.apache.ivy.ant">
-    <!-- Load Ivy -->
-    <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant"
-             classpath="lib/ivy-2.5.2.jar"/>
-
+<project name="print-job-tracker" default="dist" xmlns:ivy="antlib:org.apache.ivy.ant">
+    
     <property name="src.dir" value="src/main/java"/>
     <property name="build.dir" value="build"/>
+    <property name="dist.dir" value="dist"/>
     <property name="lib.dir" value="lib"/>
-    <property name="ivy.cache.dir" value="${build.dir}/ivy-cache"/>
+    <property name="main.class" value="Main"/>
+    <property name="jar.name" value="${ant.project.name}.jar"/>
 
-    <!-- Resolve dependencies -->
-    <target name="resolve">
-        <ivy:resolve file="ivy.xml"/>
-        <ivy:cachepath pathid="compile.classpath" conf="default"/>
-        <ivy:cachepath pathid="test.classpath" conf="test"/>
+    <!-- Load Ivy configuration (assuming ivy.jar is in the lib directory) -->
+    <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant"
+             classpath="${lib.dir}/ivy-2.5.2.jar"/>
+
+    <!-- Cleans the build and distribution directories -->
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
     </target>
 
-    <!-- Compile -->
+    <!-- Resolves and downloads dependencies based on ivy.xml -->
+    <target name="resolve">
+        <ivy:retrieve pattern="${lib.dir}/[artifact]-[revision].[ext]"/>
+        <path id="compile.classpath">
+            <fileset dir="${lib.dir}" includes="*.jar"/>
+        </path>
+    </target>
+
+    <!-- Compiles the Java source code -->
     <target name="compile" depends="resolve">
         <mkdir dir="${build.dir}/classes"/>
         <javac srcdir="${src.dir}" destdir="${build.dir}/classes" includeantruntime="false"
-               classpathref="compile.classpath"/>
+               classpathref="compile.classpath"
+               source="24" target="24"/>
     </target>
 
-    <!-- Run tests -->
-    <target name="test" depends="compile">
-        <mkdir dir="${build.dir}/test-classes"/>
-        <javac srcdir="src/test/java" destdir="${build.dir}/test-classes"
-               classpathref="test.classpath" includeantruntime="false"/>
-        <junit printsummary="yes" haltonfailure="yes">
-            <classpath>
-                <pathelement path="${build.dir}/classes"/>
-                <pathelement path="${build.dir}/test-classes"/>
-                <path refid="test.classpath"/>
-            </classpath>
-            <batchtest todir="${build.dir}/test-reports">
-                <fileset dir="src/test/java" includes="**/*Test.java"/>
-            </batchtest>
-        </junit>
+    <!-- Creates a standalone, executable fat JAR -->
+    <target name="dist" depends="compile">
+        <mkdir dir="${dist.dir}"/>
+        <jar destfile="${dist.dir}/${jar.name}">
+            <zipgroupfileset dir="${lib.dir}" includes="*.jar"/>
+            <fileset dir="${build.dir}/classes"/>
+            <manifest>
+                <attribute name="Main-Class" value="${main.class}"/>
+            </manifest>
+        </jar>
+        <echo>Build complete. The fat JAR is located at ${dist.dir}/${jar.name}</echo>
     </target>
+
+    <!-- Runs the application from the fat JAR -->
+    <target name="run" depends="dist">
+        <java jar="${dist.dir}/${jar.name}" fork="true"/>
+    </target>
+
+    <!-- Add FlatLaf and FlatLaf IntelliJ themes to classpath -->
+    <classpath>
+        <pathelement location="lib/flatlaf-3.2.jar"/>
+        <pathelement location="lib/flatlaf-intellij-themes-3.2.jar"/>
+    </classpath>
+
 </project>

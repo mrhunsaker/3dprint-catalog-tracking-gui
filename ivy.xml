@@ -1,0 +1,9 @@
+<ivy-module version="2.0">
+    <info organisation="com.example" module="print-job-tracker"/>
+    <dependencies>
+        <dependency org="com.h2database" name="h2" rev="2.2.224"/>
+        <dependency org="com.toedter" name="jcalendar" rev="1.4"/>
+        <dependency org="com.formdev" name="flatlaf" rev="3.2"/>
+        <dependency org="com.formdev" name="flatlaf-intellij-themes" rev="3.2"/>
+    </dependencies>
+</ivy-module>
