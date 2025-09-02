@@ -12,23 +12,32 @@ import java.util.Date;
 import java.util.Vector;
 import java.util.List;
 import java.util.ArrayList;
-
+/**
+ * Panel for entering and submitting new 3D print project data.
+ * Includes fields for name, type, tags, notes, dates, and folder selection.
+ * Extend this class to add more fields or validation logic.
+ */
 public class ProjectFormPanel extends JPanel {
 
-    private JTextField projectNameField;
-    private JComboBox<String> projectTypeComboBox;
-    private JComboBox<String> projectECCComboBox;
-    private JFormattedTextField lastPrintedDateField; 
-    private JTextArea projectNotesArea;
-    private JButton addDateButton;
-    private JTextField projectPathField;
-    private JButton browseButton;
-    private JButton addProjectButton;
-    private JButton searchProjectsButton;
-    private File selectedFolder;
-    private DefaultListModel<String> dateListModel;
-    private JList<String> lastPrintedDatesList;
+    // Form fields and controls
+    private JTextField projectNameField; // Project name input
+    private JComboBox<String> projectTypeComboBox; // Project type dropdown
+    private JComboBox<String> projectECCComboBox; // Project tags dropdown
+    private JFormattedTextField lastPrintedDateField; // Date input
+    private JTextArea projectNotesArea; // Notes input
+    private JButton addDateButton; // Add date to list
+    private JTextField projectPathField; // Selected folder path
+    private JButton browseButton; // Browse for folder
+    private JButton addProjectButton; // Submit project
+    private JButton searchProjectsButton; // Open search dialog
+    private File selectedFolder; // Chosen folder
+    private DefaultListModel<String> dateListModel; // List model for dates
+    private JList<String> lastPrintedDatesList; // List UI for dates
 
+    /**
+     * Constructs the project form panel and lays out all fields and buttons.
+     * All fields are mandatory for submission.
+     */
     public ProjectFormPanel() {
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -142,25 +151,30 @@ public class ProjectFormPanel extends JPanel {
         add(addProjectButton, gbc);
         row++;
 
-        // Search Projects Button (moved just below Add Project)
+        // Search Projects Button (just below Add Project)
         gbc.gridx = 1;
         gbc.gridy = row;
-    searchProjectsButton = new JButton("Search Projects");
-    searchProjectsButton.setFont(font18);
-    add(searchProjectsButton, gbc);
+        searchProjectsButton = new JButton("Search Projects");
+        searchProjectsButton.setFont(font18);
+        add(searchProjectsButton, gbc);
 
-        // Add event listeners
-        browseButton.addActionListener(this::browseForFolder);
-        addDateButton.addActionListener(this::addDateToList);
-        addProjectButton.addActionListener(this::addNewProject);
+        // Add event listeners for buttons
+        browseButton.addActionListener(this::browseForFolder); // Browse for folder
+        addDateButton.addActionListener(this::addDateToList); // Add date to list
+        addProjectButton.addActionListener(this::addNewProject); // Submit project
         searchProjectsButton.addActionListener(e -> {
-            // Open the SearchDialog
+            // Open the SearchDialog for searching projects
             JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
             SearchDialog dialog = new SearchDialog(parentFrame);
             dialog.setVisible(true);
         });
     }
 
+    /**
+     * Opens a folder chooser dialog for selecting the project folder.
+     * Updates the projectPathField with the selected folder path.
+     * @param e Action event from browse button
+     */
     private void browseForFolder(ActionEvent e) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -171,6 +185,10 @@ public class ProjectFormPanel extends JPanel {
         }
     }
 
+    /**
+     * Adds the entered date to the list of last printed dates.
+     * @param e Action event from add date button
+     */
     private void addDateToList(ActionEvent e) {
         String date = lastPrintedDateField.getText();
         if (date != null && !date.trim().isEmpty()) {
@@ -178,6 +196,12 @@ public class ProjectFormPanel extends JPanel {
         }
     }
 
+    /**
+     * Validates all fields and submits the new project to the database.
+     * Copies the project folder, inserts project data, and adds print dates.
+     * Shows error dialogs if any step fails.
+     * @param e Action event from add project button
+     */
     private void addNewProject(ActionEvent e) {
         String projectName = projectNameField.getText();
         String projectType = (String) projectTypeComboBox.getSelectedItem();
@@ -240,4 +264,5 @@ public class ProjectFormPanel extends JPanel {
             );
         }
     }
+    // Add more form logic or validation as needed for future features
 }

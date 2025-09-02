@@ -8,14 +8,24 @@ import java.sql.SQLException;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
+/**
+ * Dialog for searching and displaying 3D print projects from the database.
+ * Provides a search field, results table, and close button.
+ * Extend this class to add more search filters or result actions.
+ */
 public class SearchDialog extends JDialog {
+    // UI components
+    private JTextField searchField; // Search input field
+    private JButton searchButton; // Button to trigger search
+    private JButton closeButton; // Button to close dialog
+    private JTable resultsTable; // Table to show results
+    private DefaultTableModel tableModel; // Table model for results
 
-    private JTextField searchField;
-    private JButton searchButton;
-    private JButton closeButton;
-    private JTable resultsTable;
-    private DefaultTableModel tableModel;
-
+    /**
+     * Constructs the search dialog and initializes all UI components.
+     * Loads all projects initially.
+     * @param parent Parent JFrame for modal dialog
+     */
     public SearchDialog(JFrame parent) {
         super(parent, "Search Projects", true);
         initializeComponents();
@@ -27,6 +37,9 @@ public class SearchDialog extends JDialog {
         setLocationRelativeTo(parent);
     }
 
+    /**
+     * Initializes all UI components and configures the results table.
+     */
     private void initializeComponents() {
         searchField = new JTextField(20);
         searchButton = new JButton("Search");
@@ -49,6 +62,9 @@ public class SearchDialog extends JDialog {
         resultsTable.getColumnModel().getColumn(3).setPreferredWidth(150);
     }
 
+    /**
+     * Lays out all UI components in the dialog using BorderLayout.
+     */
     private void layoutComponents() {
         setLayout(new BorderLayout());
 
@@ -71,6 +87,9 @@ public class SearchDialog extends JDialog {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
+    /**
+     * Adds event handlers for search, enter key, and close button.
+     */
     private void addEventHandlers() {
         searchButton.addActionListener(
             new ActionListener() {
@@ -101,6 +120,10 @@ public class SearchDialog extends JDialog {
         );
     }
 
+    /**
+     * Loads all projects from the database and displays them in the results table.
+     * Shows error dialog if loading fails.
+     */
     private void loadAllProjects() {
         try (Connection conn = Database.connect()) {
             String sql =
@@ -131,6 +154,12 @@ public class SearchDialog extends JDialog {
         }
     }
 
+    /**
+     * Performs a search for projects by name or description using the search field value.
+     * Updates the results table with matching projects.
+     * Shows info dialog if no results found.
+     * Add more search logic or result actions as needed for future features
+     */
     private void performSearch() {
         String searchTerm = searchField.getText().trim();
 

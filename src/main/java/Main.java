@@ -11,7 +11,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import javax.swing.*;
 
+/**
+ * Main application window for the 3D Print Job Tracker GUI.
+ * Handles initialization, menu bar, theme selection, and main content panel.
+ * Extend this class to add more features or dialogs.
+ */
 public class Main extends JFrame {
+    /**
+     * Map of available IntelliJ themes for FlatLaf look and feel.
+     * Used to populate the Theme menu and apply selected theme.
+     */
     private static final Map<String, Class<? extends LookAndFeel>> INTELLIJ_THEMES = new TreeMap<>();
     static {
         INTELLIJ_THEMES.put("Arc", FlatArcIJTheme.class);
@@ -38,6 +47,10 @@ public class Main extends JFrame {
 
     private ProjectFormPanel projectForm;
 
+    /**
+     * Constructs the main application window, initializes database, menu bar, and content.
+     * Sets the window to maximized and visible.
+     */
     public Main() {
         setTitle("3D Print Job Tracker");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -56,6 +69,10 @@ public class Main extends JFrame {
         setVisible(true);
     }
 
+    /**
+     * Initializes the database tables if they do not exist.
+     * Shows an error dialog if initialization fails.
+     */
     private void initializeDatabase() {
         try (Connection conn = Database.connect()) {
             // Create projects table if it doesn't exist
@@ -93,6 +110,10 @@ public class Main extends JFrame {
         }
     }
 
+    /**
+     * Creates the menu bar with File, Project, and Theme menus.
+     * Theme menu allows user to select color scheme.
+     */
     private void createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
         Font menuFont = new Font("SansSerif", Font.PLAIN, 18);
@@ -138,6 +159,9 @@ public class Main extends JFrame {
         setJMenuBar(menuBar);
     }
 
+    /**
+     * Sets up the main content area, including welcome label and project form panel.
+     */
     private void createMainContent() {
         setLayout(new BorderLayout());
 
@@ -157,11 +181,18 @@ public class Main extends JFrame {
     // Remove the bottom Search Projects button
     }
 
+    /**
+     * Opens the SearchDialog for searching projects.
+     */
     private void openSearchDialog() {
         SearchDialog searchDialog = new SearchDialog(this);
         searchDialog.setVisible(true);
     }
 
+    /**
+     * Main entry point. Sets system look and feel and launches the application.
+     * Ensures GUI is created on the Event Dispatch Thread.
+     */
     public static void main(String[] args) {
         // Set look and feel to system default
         try {

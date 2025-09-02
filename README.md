@@ -1,36 +1,79 @@
-# 3D Print Job Tracker
+# 3D Print Catalog Tracking GUI
 
-A desktop Swing application to manage 3D printing projects with an embedded H2 database.
+A desktop application for cataloging, tracking, and searching 3D print projects. Built with Java Swing, H2 database, and FlatLaf themes for a modern, customizable interface.
 
 ## Features
-- Add and search projects
-- Store files per project
-- Cross-platform (Windows, Linux, macOS)
-- Portable database in `./app_home`
 
-## Run
+- **Add Projects:**
+  - Enter project name, type, tags, notes, last printed dates, and select a project folder.
+  - All fields are mandatory for submission.
+  - Project files are copied to the app's home directory for organization.
+- **Search Projects:**
+  - Search by project name or description.
+  - Results displayed in a sortable table.
+- **Theme Selection:**
+  - Choose from a variety of FlatLaf IntelliJ themes via the menu bar for light/dark/colorful UI.
+- **Database:**
+  - Uses H2 embedded database for storing project metadata and print history.
+- **Modern UI:**
+  - Large, accessible fonts (18pt) throughout the interface.
+  - Maximized window on startup.
 
-### Maven
-```bash
+## Getting Started
+
+### Prerequisites
+- Java 17 or newer
+- Maven, Gradle, or Ant (for building)
+
+### Build & Run
+
+#### Maven
+```sh
 mvn clean package
-./run.sh
+java -jar target/print-job-tracker-2025-08-beta.jar
 ```
 
-### Gradle
-```bash
+#### Gradle
+```sh
 gradle build
-./run.sh
+java -jar build/libs/print-job-tracker-2025-08-beta.jar
 ```
 
-### Windows
-```cmd
-run.bat
+#### Ant
+```sh
+ant
+java -jar dist/print-job-tracker-2025-08-beta.jar
 ```
 
-## CI/CD
-- GitHub Actions builds with Maven and Gradle
-- GPG-signed artifacts with checksums
-- Release automation
+### Dependencies
+- [FlatLaf](https://www.formdev.com/flatlaf/) (core and IntelliJ themes)
+- H2 Database
+
+All dependencies are specified in `pom.xml`, `build.gradle`, `build.xml`, and `ivy.xml`.
+
+## Project Structure
+```
+app_home/           # Application data and copied project folders
+lib/                # External JARs (for Ant/Ivy)
+src/main/java/      # Source code
+  Main.java         # Main application window
+  ProjectFormPanel.java # Project entry form
+  SearchDialog.java # Project search dialog
+  Database.java     # Database utilities
+  FileUtils.java    # File operations
+  Project.java      # Project data model
+```
+
+## Customization
+- Add new project types or tags in `ProjectFormPanel.java`.
+- Extend the database schema in `Main.java` and `Database.java`.
+- Add new themes by updating the theme map in `Main.java`.
 
 ## License
-MIT
+MIT License
+
+## Author
+mrhunsaker
+
+---
+For questions or contributions, open an issue or pull request on GitHub.
