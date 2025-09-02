@@ -12,9 +12,12 @@ import java.util.Date;
 import java.util.Vector;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Calendar;
+
 /**
  * Panel for entering and submitting new 3D print project data.
  * Includes fields for name, type, tags, notes, dates, and folder selection.
+ * Features date picker and form clearing after successful submission.
  * Extend this class to add more fields or validation logic.
  */
 public class ProjectFormPanel extends JPanel {
@@ -26,6 +29,8 @@ public class ProjectFormPanel extends JPanel {
     private JFormattedTextField lastPrintedDateField; // Date input
     private JTextArea projectNotesArea; // Notes input
     private JButton addDateButton; // Add date to list
+    private JButton datePickerButton; // Open date picker
+    private JButton removeDateButton; // Remove selected date from list
     private JTextField projectPathField; // Selected folder path
     private JButton browseButton; // Browse for folder
     private JButton addProjectButton; // Submit project
@@ -54,9 +59,11 @@ public class ProjectFormPanel extends JPanel {
         nameLabel.setFont(font18);
         add(nameLabel, gbc);
         gbc.gridx = 1;
+        gbc.gridwidth = 2;
         projectNameField = new JTextField(20);
         projectNameField.setFont(font18);
         add(projectNameField, gbc);
+        gbc.gridwidth = 1;
         row++;
 
         // Project Type
@@ -66,10 +73,12 @@ public class ProjectFormPanel extends JPanel {
         typeLabel.setFont(font18);
         add(typeLabel, gbc);
         gbc.gridx = 1;
+        gbc.gridwidth = 2;
         String[] projectTypes = {"Model", "Prototype", "Final Print"};
         projectTypeComboBox = new JComboBox<>(projectTypes);
         projectTypeComboBox.setFont(font18);
         add(projectTypeComboBox, gbc);
+        gbc.gridwidth = 1;
         row++;
 
         // Project ECC/Tags
@@ -79,10 +88,12 @@ public class ProjectFormPanel extends JPanel {
         tagsLabel.setFont(font18);
         add(tagsLabel, gbc);
         gbc.gridx = 1;
+        gbc.gridwidth = 2;
         String[] projectTags = {"ECC", "O&M", "Math", "Biology", "Chemistry"};
         projectECCComboBox = new JComboBox<>(projectTags);
         projectECCComboBox.setFont(font18);
         add(projectECCComboBox, gbc);
+        gbc.gridwidth = 1;
         row++;
 
         // Project Notes
@@ -92,9 +103,11 @@ public class ProjectFormPanel extends JPanel {
         notesLabel.setFont(font18);
         add(notesLabel, gbc);
         gbc.gridx = 1;
+        gbc.gridwidth = 2;
         projectNotesArea = new JTextArea(5, 20);
         projectNotesArea.setFont(font18);
         add(new JScrollPane(projectNotesArea), gbc);
+        gbc.gridwidth = 1;
         row++;
 
         // Last Printed Date
@@ -109,9 +122,17 @@ public class ProjectFormPanel extends JPanel {
         lastPrintedDateField.setFont(font18);
         add(lastPrintedDateField, gbc);
         gbc.gridx = 2;
+        
+        // Panel for date buttons
+        JPanel dateButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         addDateButton = new JButton("Add Date");
         addDateButton.setFont(font18);
-        add(addDateButton, gbc);
+        datePickerButton = new JButton("📅");
+        datePickerButton.setFont(font18);
+        datePickerButton.setToolTipText("Open Date Picker");
+        dateButtonPanel.add(addDateButton);
+        dateButtonPanel.add(datePickerButton);
+        add(dateButtonPanel, gbc);
         row++;
 
         // List of Dates
@@ -121,9 +142,18 @@ public class ProjectFormPanel extends JPanel {
         dateListModel = new DefaultListModel<>();
         lastPrintedDatesList = new JList<>(dateListModel);
         lastPrintedDatesList.setFont(font18);
-        lastPrintedDatesList.setPreferredSize(new Dimension(200, 50));
-        add(new JScrollPane(lastPrintedDatesList), gbc);
+        lastPrintedDatesList.setPreferredSize(new Dimension(200, 80));
+        JScrollPane dateScrollPane = new JScrollPane(lastPrintedDatesList);
+        add(dateScrollPane, gbc);
         gbc.gridwidth = 1;
+        row++;
+
+        // Remove Date Button
+        gbc.gridx = 1;
+        gbc.gridy = row;
+        removeDateButton = new JButton("Remove Selected Date");
+        removeDateButton.setFont(font18);
+        add(removeDateButton, gbc);
         row++;
 
         // Project Folder Path
@@ -161,6 +191,8 @@ public class ProjectFormPanel extends JPanel {
         // Add event listeners for buttons
         browseButton.addActionListener(this::browseForFolder); // Browse for folder
         addDateButton.addActionListener(this::addDateToList); // Add date to list
+        datePickerButton.addActionListener(this::openDatePicker); // Open date picker
+        removeDateButton.addActionListener(this::removeSelectedDate); // Remove selected date
         addProjectButton.addActionListener(this::addNewProject); // Submit project
         searchProjectsButton.addActionListener(e -> {
             // Open the SearchDialog for searching projects
@@ -192,13 +224,103 @@ public class ProjectFormPanel extends JPanel {
     private void addDateToList(ActionEvent e) {
         String date = lastPrintedDateField.getText();
         if (date != null && !date.trim().isEmpty()) {
-            dateListModel.addElement(date);
+            // Check if date is already in the list
+            if (!dateListModel.contains(date)) {
+                dateListModel.addElement(date);
+            } else {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "This date is already in the list.",
+                    "Duplicate Date",
+                    JOptionPane.WARNING_MESSAGE
+                );
+            }
         }
+    }
+
+    /**
+     * Opens a date picker dialog for selecting a date.
+     * @param e Action event from date picker button
+     */
+    private void openDatePicker(ActionEvent e) {
+        // Create a simple date picker using JSpinner
+        JDialog dateDialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Select Date", true);
+        dateDialog.setLayout(new BorderLayout());
+        
+        // Create date spinner
+        JSpinner dateSpinner = new JSpinner(new SpinnerDateModel());
+        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd");
+        dateSpinner.setEditor(dateEditor);
+        dateSpinner.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        
+        // Set current value to today
+        dateSpinner.setValue(new Date());
+        
+        JPanel centerPanel = new JPanel(new FlowLayout());
+        centerPanel.add(new JLabel("Select Date:"));
+        centerPanel.add(dateSpinner);
+        dateDialog.add(centerPanel, BorderLayout.CENTER);
+        
+        // Buttons
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton okButton = new JButton("OK");
+        JButton cancelButton = new JButton("Cancel");
+        
+        okButton.addActionListener(ev -> {
+            Date selectedDate = (Date) dateSpinner.getValue();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            String formattedDate = sdf.format(selectedDate);
+            lastPrintedDateField.setText(formattedDate);
+            dateDialog.dispose();
+        });
+        
+        cancelButton.addActionListener(ev -> dateDialog.dispose());
+        
+        buttonPanel.add(okButton);
+        buttonPanel.add(cancelButton);
+        dateDialog.add(buttonPanel, BorderLayout.SOUTH);
+        
+        dateDialog.setSize(300, 150);
+        dateDialog.setLocationRelativeTo(this);
+        dateDialog.setVisible(true);
+    }
+
+    /**
+     * Removes the selected date from the list of last printed dates.
+     * @param e Action event from remove date button
+     */
+    private void removeSelectedDate(ActionEvent e) {
+        int selectedIndex = lastPrintedDatesList.getSelectedIndex();
+        if (selectedIndex != -1) {
+            dateListModel.remove(selectedIndex);
+        } else {
+            JOptionPane.showMessageDialog(
+                this,
+                "Please select a date to remove.",
+                "No Selection",
+                JOptionPane.WARNING_MESSAGE
+            );
+        }
+    }
+
+    /**
+     * Clears all form fields and resets to default values.
+     */
+    private void clearForm() {
+        projectNameField.setText("");
+        projectTypeComboBox.setSelectedIndex(0);
+        projectECCComboBox.setSelectedIndex(0);
+        projectNotesArea.setText("");
+        lastPrintedDateField.setValue(new Date());
+        dateListModel.clear();
+        projectPathField.setText("");
+        selectedFolder = null;
     }
 
     /**
      * Validates all fields and submits the new project to the database.
      * Copies the project folder, inserts project data, and adds print dates.
+     * Clears the form after successful submission.
      * Shows error dialogs if any step fails.
      * @param e Action event from add project button
      */
@@ -247,6 +369,9 @@ public class ProjectFormPanel extends JPanel {
                 "Success",
                 JOptionPane.INFORMATION_MESSAGE
             );
+
+            // Clear the form after successful submission
+            clearForm();
 
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(

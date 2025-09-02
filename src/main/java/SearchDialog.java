@@ -1,6 +1,9 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,6 +14,7 @@ import javax.swing.table.DefaultTableModel;
 /**
  * Dialog for searching and displaying 3D print projects from the database.
  * Provides a search field, results table, and close button.
+ * Double-click on table rows to open project folders in file explorer.
  * Extend this class to add more search filters or result actions.
  */
 public class SearchDialog extends JDialog {
@@ -33,7 +37,7 @@ public class SearchDialog extends JDialog {
         addEventHandlers();
         loadAllProjects(); // Load all projects initially
 
-        setSize(600, 400);
+        setSize(800, 500);
         setLocationRelativeTo(parent);
     }
 
@@ -45,8 +49,8 @@ public class SearchDialog extends JDialog {
         searchButton = new JButton("Search");
         closeButton = new JButton("Close");
 
-        // Create table model with columns
-        String[] columnNames = { "ID", "Name", "Description", "Created Date" };
+        // Create table model with columns including file_path
+        String[] columnNames = { "ID", "Name", "Type", "Description", "Created Date", "File Path" };
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -58,8 +62,10 @@ public class SearchDialog extends JDialog {
         resultsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         resultsTable.getColumnModel().getColumn(0).setPreferredWidth(50);
         resultsTable.getColumnModel().getColumn(1).setPreferredWidth(150);
-        resultsTable.getColumnModel().getColumn(2).setPreferredWidth(250);
-        resultsTable.getColumnModel().getColumn(3).setPreferredWidth(150);
+        resultsTable.getColumnModel().getColumn(2).setPreferredWidth(100);
+        resultsTable.getColumnModel().getColumn(3).setPreferredWidth(200);
+        resultsTable.getColumnModel().getColumn(4).setPreferredWidth(150);
+        resultsTable.getColumnModel().getColumn(5).setPreferredWidth(200);
     }
 
     /**
@@ -88,7 +94,7 @@ public class SearchDialog extends JDialog {
     }
 
     /**
-     * Adds event handlers for search, enter key, and close button.
+     * Adds event handlers for search, enter key, close button, and double-click on table.
      */
     private void addEventHandlers() {
         searchButton.addActionListener(
@@ -118,6 +124,57 @@ public class SearchDialog extends JDialog {
                 }
             }
         );
+
+        // Add double-click handler to open project folder
+        resultsTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    openSelectedProjectFolder();
+                }
+            }
+        });
+    }
+
+    /**
+     * Opens the selected project's folder in the system file explorer.
+     * Shows error dialog if opening fails or no row is selected.
+     */
+    private void openSelectedProjectFolder() {
+        int selectedRow = resultsTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Please select a project to open its folder.",
+                "No Selection",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        // Get the file path from the selected row (column index 5)
+        String filePath = (String) tableModel.getValueAt(selectedRow, 5);
+        
+        if (filePath == null || filePath.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(
+                this,
+                "No file path found for this project.",
+                "Path Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        try {
+            FileUtils.openFolder(filePath);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Failed to open folder: " + ex.getMessage(),
+                "File Explorer Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     /**
@@ -127,7 +184,7 @@ public class SearchDialog extends JDialog {
     private void loadAllProjects() {
         try (Connection conn = Database.connect()) {
             String sql =
-                "SELECT id, name, description, created_date FROM projects ORDER BY created_date DESC";
+                "SELECT id, name, project_type, description, created_date, file_path FROM projects ORDER BY created_date DESC";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -139,8 +196,10 @@ public class SearchDialog extends JDialog {
                 Object[] row = {
                     rs.getInt("id"),
                     rs.getString("name"),
+                    rs.getString("project_type"),
                     rs.getString("description"),
                     rs.getTimestamp("created_date"),
+                    rs.getString("file_path")
                 };
                 tableModel.addRow(row);
             }
@@ -170,7 +229,7 @@ public class SearchDialog extends JDialog {
 
         try (Connection conn = Database.connect()) {
             String sql =
-                "SELECT id, name, description, created_date FROM projects " +
+                "SELECT id, name, project_type, description, created_date, file_path FROM projects " +
                 "WHERE LOWER(name) LIKE ? OR LOWER(description) LIKE ? " +
                 "ORDER BY created_date DESC";
             PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -188,8 +247,10 @@ public class SearchDialog extends JDialog {
                 Object[] row = {
                     rs.getInt("id"),
                     rs.getString("name"),
+                    rs.getString("project_type"),
                     rs.getString("description"),
                     rs.getTimestamp("created_date"),
+                    rs.getString("file_path")
                 };
                 tableModel.addRow(row);
             }
