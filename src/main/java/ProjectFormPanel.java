@@ -2,6 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -260,6 +262,16 @@ public class ProjectFormPanel extends JPanel {
         });
         loadProjectButton.addActionListener(this::loadProjectData);
         updateProjectButton.addActionListener(this::updateProjectData);
+
+        // Release keyboard trap on Alt-M in projectNotesArea
+        projectNotesArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.isAltDown() && e.getKeyCode() == KeyEvent.VK_M) {
+                    KeyboardFocusManager.getCurrentKeyboardFocusManager().focusNextComponent();
+                }
+            }
+        });
     }
 
     /**

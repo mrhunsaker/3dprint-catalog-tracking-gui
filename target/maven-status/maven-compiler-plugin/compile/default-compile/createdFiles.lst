@@ -1,5 +1,6 @@
 ui\SettingsPanel.class
 SearchDialog$4.class
+ProjectFormPanel$4.class
 utils\FileUtils.class
 utils\FileOperation.class
 utils\ErrorHandler.class

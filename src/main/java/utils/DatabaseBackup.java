@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import javax.swing.JOptionPane;
 
 /**
  * Utility class for database backup and recovery.
@@ -29,6 +30,8 @@ public class DatabaseBackup {
         Path target = Paths.get(BACKUP_DIR, "backup_" + timestamp + ".mv.db");
 
         Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+
+        JOptionPane.showMessageDialog(null, "Backup created successfully at: " + target.toString(), "Backup Success", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**

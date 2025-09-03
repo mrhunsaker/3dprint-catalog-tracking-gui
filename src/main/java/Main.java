@@ -60,13 +60,27 @@ public class Main extends JFrame {
 
     private ProjectFormPanel projectForm;
 
+    private static Main instance;
+
+    public static synchronized Main getInstance() {
+        if (instance == null) {
+            instance = new Main();
+        }
+        return instance;
+    }
+
     /**
      * Constructs the main application window, initializes database, menu bar, and content.
      * Sets the window to maximized and visible.
      */
     public Main() {
+        if (instance != null) {
+            throw new IllegalStateException("An instance of Main already exists.");
+        }
+        instance = this;
+
         setTitle("3D Print Job Tracker");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Ensure only one instance closes the application
         setExtendedState(JFrame.MAXIMIZED_BOTH); // Open maximized
         setLocationRelativeTo(null); // Center the window
 
@@ -224,16 +238,19 @@ public class Main extends JFrame {
 
         JMenuItem backupItem = new JMenuItem("Backup Database");
         backupItem.setFont(menuFont);
+        backupItem.setAccelerator(KeyStroke.getKeyStroke('B', Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         backupItem.addActionListener(this::performBackup);
         fileMenu.add(backupItem);
 
         JMenuItem restoreItem = new JMenuItem("Restore Database");
         restoreItem.setFont(menuFont);
+        restoreItem.setAccelerator(KeyStroke.getKeyStroke('R', Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         restoreItem.addActionListener(this::performRestore);
         fileMenu.add(restoreItem);
 
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.setFont(menuFont);
+        exitItem.setAccelerator(KeyStroke.getKeyStroke('Q', Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         exitItem.addActionListener(this::exitApplication);
         fileMenu.add(exitItem);
 
@@ -242,6 +259,7 @@ public class Main extends JFrame {
         projectMenu.setFont(menuFont);
         JMenuItem searchItem = new JMenuItem("Search Projects");
         searchItem.setFont(menuFont);
+        searchItem.setAccelerator(KeyStroke.getKeyStroke('F', Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         searchItem.addActionListener(this::openSearchDialog);
         projectMenu.add(searchItem);
 
@@ -268,6 +286,12 @@ public class Main extends JFrame {
         userGuideItem.addActionListener(this::showUserGuide);
         helpMenu.add(userGuideItem);
 
+        JMenuItem shortcutsItem = new JMenuItem("Keyboard Shortcuts");
+        shortcutsItem.setFont(menuFont);
+        shortcutsItem.setAccelerator(KeyStroke.getKeyStroke('?', Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+        shortcutsItem.addActionListener(this::showShortcutsDialog);
+        helpMenu.add(shortcutsItem);
+
         JMenuItem aboutItem = new JMenuItem("About");
         aboutItem.setFont(menuFont);
         aboutItem.addActionListener(this::showAboutDialog);
@@ -279,6 +303,22 @@ public class Main extends JFrame {
         menuBar.add(helpMenu);
 
         setJMenuBar(menuBar);
+    }
+
+    private void showShortcutsDialog(ActionEvent e) {
+        String shortcuts = "Keyboard Shortcuts:\n" +
+            "Ctrl+B: Backup Database\n" +
+            "Ctrl+R: Restore Database\n" +
+            "Ctrl+Q: Exit Application\n" +
+            "Ctrl+F: Search Projects\n" +
+            "Ctrl+?: Show Keyboard Shortcuts";
+
+        JOptionPane.showMessageDialog(
+            this,
+            shortcuts,
+            "Keyboard Shortcuts",
+            JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     /**
@@ -354,12 +394,33 @@ public class Main extends JFrame {
         // Ensure GUI creation happens on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
             System.out.println("3D Print Job Tracker started...");
-            new Main();
+            getInstance();
         });
     }
 
     private void performBackup(ActionEvent e) {
-        // Placeholder for backup logic
+        try {
+            String dbFilePath = "app_home/print_jobs.mv.db";
+            DatabaseBackup.createBackup(dbFilePath);
+            JOptionPane.showMessageDialog(
+                this,
+                "Database backup created successfully.",
+                "Backup Success",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+        } catch (IOException ex) {
+            ErrorHandler.showErrorToUser("Failed to create database backup.", ex.getMessage());
+        }
+    }
+
+    private void performScheduledBackup() {
+        try {
+            String dbFilePath = "app_home/print_jobs.mv.db";
+            DatabaseBackup.createBackup(dbFilePath);
+            System.out.println("Scheduled database backup created successfully.");
+        } catch (IOException ex) {
+            ErrorHandler.logError("Failed to create scheduled database backup.", ex);
+        }
     }
 
     private void performRestore(ActionEvent e) {
@@ -407,16 +468,65 @@ public class Main extends JFrame {
         }
     }
 
-    private void performScheduledBackup() {
-        // Placeholder for scheduled backup logic
-    }
-
     private void showUserGuide(ActionEvent e) {
-        JOptionPane.showMessageDialog(this, "User Guide: Instructions go here.", "User Guide", JOptionPane.INFORMATION_MESSAGE);
+        String userGuide = "User Guide:\n\n" +
+            "- Main Window:\n" +
+            "  The main application window provides access to all features, including project management, database operations, and theme selection.\n\n" +
+            "- Menu Bar:\n" +
+            "  File Menu:\n" +
+            "    - Backup Database: Create a backup of the current database.\n" +
+            "    - Restore Database: Restore the database from a backup.\n" +
+            "    - Exit: Close the application.\n" +
+            "  Project Menu:\n" +
+            "    - Search Projects: Open the search dialog to find projects.\n" +
+            "  Theme Menu:\n" +
+            "    - Select a theme to customize the application's appearance.\n\n" +
+            "- Keyboard Shortcuts:\n" +
+            "  Ctrl+B: Backup Database\n" +
+            "  Ctrl+R: Restore Database\n" +
+            "  Ctrl+Q: Exit Application\n" +
+            "  Ctrl+F: Search Projects\n" +
+            "  Ctrl+?: Show Keyboard Shortcuts\n";
+
+        JOptionPane.showMessageDialog(
+            this,
+            userGuide,
+            "User Guide",
+            JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     private void showAboutDialog(ActionEvent e) {
-        JOptionPane.showMessageDialog(this, "About: 3D Print Job Tracker v1.0", "About", JOptionPane.INFORMATION_MESSAGE);
+        String aboutText = "3D Print Job Tracker\n" +
+            "Version: 2025-08-beta\n" +
+            "Developed by: Michael Ryan Hunsaker, M.Ed., Ph.D.\n" +
+            "hunsakerconsulting@gmail.com\n" +
+            "Copyright © 2025\n" +
+            "Description: A GUI application for managing 3D print jobs, including project tracking, database backups, and theme customization.";
+
+        JOptionPane.showMessageDialog(
+            this,
+            aboutText,
+            "About",
+            JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    private void ensureConsistentFontSize() {
+        Font universalFont = new Font("SansSerif", Font.PLAIN, 18);
+        UIManager.put("Label.font", universalFont);
+        UIManager.put("Button.font", universalFont);
+        UIManager.put("Menu.font", universalFont);
+        UIManager.put("MenuItem.font", universalFont);
+        UIManager.put("TextField.font", universalFont);
+        UIManager.put("TextArea.font", universalFont);
+        UIManager.put("ComboBox.font", universalFont);
+        UIManager.put("List.font", universalFont);
+    }
+
+    // Call ensureConsistentFontSize at the start of the application
+    static {
+        new Main().ensureConsistentFontSize();
     }
 
     /**
