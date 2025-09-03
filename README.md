@@ -45,11 +45,18 @@ ant
 java -jar dist/print-job-tracker-2025-08-beta.jar
 ```
 
+#### Ivy
+```sh
+ant ivy
+java -jar dist/print-job-tracker-2025-08-beta.jar
+```
+
 ### Dependencies
 - [FlatLaf](https://www.formdev.com/flatlaf/) (core and IntelliJ themes)
 - H2 Database
+- JCalendar for date picker
 
-All dependencies are specified in `pom.xml`, `build.gradle`, `build.xml`, and `ivy.xml`.
+All dependencies are specified in `pom.xml`, `build.gradle`, `build.gradle.kts`, and `ivy.xml`.
 
 ## Project Structure
 ```

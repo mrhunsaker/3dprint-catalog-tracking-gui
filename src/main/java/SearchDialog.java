@@ -23,6 +23,8 @@ public class SearchDialog extends JDialog {
     private JTextField searchField; // Search input field
     private JButton searchButton; // Button to trigger search
     private JButton closeButton; // Button to close dialog
+    private JButton loadProjectButton; // Button to load selected project
+    private JButton openFolderButton; // Button to open project folder
     private JTable resultsTable; // Table to show results
     private DefaultTableModel tableModel; // Table model for results
 
@@ -49,6 +51,8 @@ public class SearchDialog extends JDialog {
         searchField = new JTextField(20);
         searchButton = new JButton("Search");
         closeButton = new JButton("Close");
+        loadProjectButton = new JButton("Load Project");
+        openFolderButton = new JButton("Open Project Folder");
 
         // Create table model with columns including file_path
         String[] columnNames = { "ID", "Name", "Type", "Description", "Created Date", "File Path" };
@@ -89,6 +93,8 @@ public class SearchDialog extends JDialog {
 
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.add(loadProjectButton);
+        buttonPanel.add(openFolderButton);
         buttonPanel.add(closeButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
@@ -122,6 +128,24 @@ public class SearchDialog extends JDialog {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     dispose();
+                }
+            }
+        );
+
+        loadProjectButton.addActionListener(
+            new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    loadSelectedProject();
+                }
+            }
+        );
+
+        openFolderButton.addActionListener(
+            new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    openSelectedProjectFolder();
                 }
             }
         );
@@ -274,5 +298,39 @@ public class SearchDialog extends JDialog {
                 e.getMessage()
             );
         }
+    }
+
+    /**
+     * Loads the details of the selected project into the main form.
+     * @param projectName The name of the project
+     * @param projectType The type of the project
+     * @param description The description of the project
+     * @param filePath The file path of the project
+     */
+    private void loadSelectedProject() {
+        int selectedRow = resultsTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Please select a project to load.",
+                "No Selection",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        // Get project details from the selected row
+        String projectName = (String) tableModel.getValueAt(selectedRow, 1);
+        String projectType = (String) tableModel.getValueAt(selectedRow, 2);
+        String description = (String) tableModel.getValueAt(selectedRow, 3);
+        String filePath = (String) tableModel.getValueAt(selectedRow, 5);
+
+        // Load project details into the main form
+        if (getParent() instanceof Main) {
+            Main mainFrame = (Main) getParent();
+            mainFrame.loadProjectDetails(projectName, projectType, description, filePath);
+        }
+
+        dispose();
     }
 }

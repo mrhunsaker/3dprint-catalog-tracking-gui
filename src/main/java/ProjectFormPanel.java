@@ -1,11 +1,13 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.sql.ResultSet; // Import for ResultSet
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -23,7 +25,6 @@ public class ProjectFormPanel extends JPanel {
     // Form fields and controls
     private JTextField projectNameField; // Project name input
     private JComboBox<String> projectTypeComboBox; // Project type dropdown
-    private JComboBox<String> projectECCComboBox; // Project tags dropdown
     private JFormattedTextField lastPrintedDateField; // Date input
     private JTextArea projectNotesArea; // Notes input
     private JButton addDateButton; // Add date to list
@@ -36,6 +37,13 @@ public class ProjectFormPanel extends JPanel {
     private File selectedFolder; // Chosen folder
     private DefaultListModel<String> dateListModel; // List model for dates
     private JList<String> lastPrintedDatesList; // List UI for dates
+
+    // Add Project Recipient field
+    private JTextField projectRecipientField; // Project recipient input
+    // Modify Project Tags to allow multi-selection
+    private JList<String> projectTagsList; // Multi-selection list for tags
+    private JButton loadProjectButton; // Load project data into form
+    private JButton updateProjectButton; // Update project details
 
     /**
      * Constructs the project form panel and lays out all fields and buttons.
@@ -55,11 +63,15 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridy = row;
         JLabel nameLabel = new JLabel("Project Name:");
         nameLabel.setFont(font18);
+        nameLabel.getAccessibleContext().setAccessibleDescription("Label for project name input field");
         add(nameLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
         projectNameField = new JTextField(20);
         projectNameField.setFont(font18);
+        projectNameField.setToolTipText("Enter the name of the project.");
+        projectNameField.getAccessibleContext().setAccessibleName("Project Name Input");
+        projectNameField.getAccessibleContext().setAccessibleDescription("Input field for entering the project name.");
         add(projectNameField, gbc);
         gbc.gridwidth = 1;
         row++;
@@ -69,13 +81,32 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridy = row;
         JLabel typeLabel = new JLabel("Project Type:");
         typeLabel.setFont(font18);
+        typeLabel.getAccessibleContext().setAccessibleDescription("Label for project type dropdown");
         add(typeLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
-        String[] projectTypes = {"Model", "Prototype", "Final Print"};
+        String[] projectTypes = {"Prototype", "Final Print"};
         projectTypeComboBox = new JComboBox<>(projectTypes);
         projectTypeComboBox.setFont(font18);
+        projectTypeComboBox.setToolTipText("Select the type of project.");
+        projectTypeComboBox.getAccessibleContext().setAccessibleName("Project Type Dropdown");
+        projectTypeComboBox.getAccessibleContext().setAccessibleDescription("Dropdown for selecting the project type.");
         add(projectTypeComboBox, gbc);
+        gbc.gridwidth = 1;
+        row++;
+
+        // Project Recipient
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        JLabel recipientLabel = new JLabel("Project Recipient:");
+        recipientLabel.setFont(font18);
+        add(recipientLabel, gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        projectRecipientField = new JTextField(20);
+        projectRecipientField.setFont(font18);
+        projectRecipientField.setToolTipText("Enter the recipient of the project.");
+        add(projectRecipientField, gbc);
         gbc.gridwidth = 1;
         row++;
 
@@ -84,13 +115,15 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridy = row;
         JLabel tagsLabel = new JLabel("Project Tags:");
         tagsLabel.setFont(font18);
+        tagsLabel.getAccessibleContext().setAccessibleDescription("Label for project tags dropdown");
         add(tagsLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
-        String[] projectTags = {"ECC", "O&M", "Math", "Biology", "Chemistry"};
-        projectECCComboBox = new JComboBox<>(projectTags);
-        projectECCComboBox.setFont(font18);
-        add(projectECCComboBox, gbc);
+        String[] projectTags = {"ECC", "O&M", "Math", "Biology", "Chemistry", "ELA", "Braille", "Communication"};
+        projectTagsList = new JList<>(projectTags);
+        projectTagsList.setFont(font18);
+        projectTagsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        add(new JScrollPane(projectTagsList), gbc);
         gbc.gridwidth = 1;
         row++;
 
@@ -99,11 +132,15 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridy = row;
         JLabel notesLabel = new JLabel("Project Notes:");
         notesLabel.setFont(font18);
+        notesLabel.getAccessibleContext().setAccessibleDescription("Label for project notes input area");
         add(notesLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
         projectNotesArea = new JTextArea(5, 20);
         projectNotesArea.setFont(font18);
+        projectNotesArea.setToolTipText("Enter notes or additional information about the project.");
+        projectNotesArea.getAccessibleContext().setAccessibleName("Project Notes Input");
+        projectNotesArea.getAccessibleContext().setAccessibleDescription("Input area for entering notes or additional information about the project.");
         add(new JScrollPane(projectNotesArea), gbc);
         gbc.gridwidth = 1;
         row++;
@@ -176,6 +213,9 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridy = row;
         addProjectButton = new JButton("Add Project");
         addProjectButton.setFont(font18);
+        addProjectButton.setToolTipText("Add the project to the database.");
+        addProjectButton.getAccessibleContext().setAccessibleName("Add Project Button");
+        addProjectButton.getAccessibleContext().setAccessibleDescription("Button to add the project to the database.");
         add(addProjectButton, gbc);
         row++;
 
@@ -186,18 +226,40 @@ public class ProjectFormPanel extends JPanel {
         searchProjectsButton.setFont(font18);
         add(searchProjectsButton, gbc);
 
+        // Add Load Project Button
+        gbc.gridx = 1;
+        gbc.gridy = row;
+        loadProjectButton = new JButton("Load Project");
+        loadProjectButton.setFont(font18);
+        loadProjectButton.setToolTipText("Load project data into the form.");
+        add(loadProjectButton, gbc);
+        row++;
+
+        // Add Update Project Button
+        gbc.gridx = 1;
+        gbc.gridy = row;
+        updateProjectButton = new JButton("Update Project");
+        updateProjectButton.setFont(font18);
+        updateProjectButton.setToolTipText("Update the project details in the database.");
+        add(updateProjectButton, gbc);
+        row++;
+
         // Add event listeners for buttons
         browseButton.addActionListener(this::browseForFolder); // Browse for folder
         addDateButton.addActionListener(this::addDateToList); // Add date to list
         datePickerButton.addActionListener(this::openDatePicker); // Open date picker
         removeDateButton.addActionListener(this::removeSelectedDate); // Remove selected date
         addProjectButton.addActionListener(this::addNewProject); // Submit project
-        searchProjectsButton.addActionListener(e -> { // `e` is unused but required by ActionListener
-            // Open the SearchDialog for searching projects
-            JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            SearchDialog dialog = new SearchDialog(parentFrame);
-            dialog.setVisible(true);
+        searchProjectsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(ProjectFormPanel.this);
+                SearchDialog searchDialog = new SearchDialog(parentFrame);
+                searchDialog.setVisible(true);
+            }
         });
+        loadProjectButton.addActionListener(this::loadProjectData);
+        updateProjectButton.addActionListener(this::updateProjectData);
     }
 
     /**
@@ -264,15 +326,23 @@ public class ProjectFormPanel extends JPanel {
         JButton okButton = new JButton("OK");
         JButton cancelButton = new JButton("Cancel");
         
-        okButton.addActionListener(ev -> { // `ev` is unused but required by ActionListener
-            Date selectedDate = (Date) dateSpinner.getValue();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            String formattedDate = sdf.format(selectedDate);
-            lastPrintedDateField.setText(formattedDate);
-            dateDialog.dispose();
+        okButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ev) {
+                Date selectedDate = (Date) dateSpinner.getValue();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                String formattedDate = sdf.format(selectedDate);
+                lastPrintedDateField.setText(formattedDate);
+                dateDialog.dispose();
+            }
         });
         
-        cancelButton.addActionListener(ev -> dateDialog.dispose()); // `ev` is unused but required by ActionListener
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ev) {
+                dateDialog.dispose();
+            }
+        });
         
         buttonPanel.add(okButton);
         buttonPanel.add(cancelButton);
@@ -302,16 +372,17 @@ public class ProjectFormPanel extends JPanel {
     }
 
     /**
-     * Clears all form fields and resets to default values.
+     * Clears all form fields and resets to default values without altering layout.
      */
     private void clearForm() {
         projectNameField.setText("");
         projectTypeComboBox.setSelectedIndex(0);
-        projectECCComboBox.setSelectedIndex(0);
+        projectRecipientField.setText("");
         projectNotesArea.setText("");
         lastPrintedDateField.setValue(new Date());
         dateListModel.clear();
         projectPathField.setText("");
+        // Retain the selected folder reference but clear the path field
         selectedFolder = null;
     }
 
@@ -476,5 +547,98 @@ public class ProjectFormPanel extends JPanel {
             );
         }
     }
+
+    /**
+     * Filters the projects displayed in the panel based on the search query.
+     * @param query The search query to filter projects.
+     */
+    public void filterProjects(String query) {
+        // Placeholder for filtering logic
+        System.out.println("Filtering projects with query: " + query);
+        // Example: Implement logic to filter projects based on the query
+    }
+
+    // Method to load project data into the form
+    private void loadProjectData(ActionEvent e) {
+        String projectIdStr = JOptionPane.showInputDialog(this, "Enter Project ID to Load:", "Load Project", JOptionPane.QUESTION_MESSAGE);
+        if (projectIdStr != null && !projectIdStr.trim().isEmpty()) {
+            try {
+                int projectId = Integer.parseInt(projectIdStr.trim());
+                try (ResultSet rs = Database.loadProjectById(projectId)) {
+                    if (rs.next()) {
+                        projectNameField.setText(rs.getString("name"));
+                        projectTypeComboBox.setSelectedItem(rs.getString("project_type"));
+                        projectRecipientField.setText(rs.getString("recipient"));
+                        projectNotesArea.setText(rs.getString("description"));
+
+                        // Set tags (split delimited string into list)
+                        String tags = rs.getString("tags");
+                        if (tags != null) {
+                            List<String> tagList = List.of(tags.split(","));
+                            projectTagsList.setSelectedIndices(tagList.stream().mapToInt(tag -> {
+                                for (int i = 0; i < projectTagsList.getModel().getSize(); i++) {
+                                    if (projectTagsList.getModel().getElementAt(i).equals(tag)) {
+                                        return i;
+                                    }
+                                }
+                                return -1;
+                            }).filter(index -> index != -1).toArray());
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Project not found.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid Project ID.", "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (SQLException ex) {
+                ErrorHandler.showErrorToUser("Failed to load project data.", ex.getMessage());
+            }
+        }
+    }
+
+    // Method to update project data in the database
+    private void updateProjectData(ActionEvent e) {
+        String projectName = projectNameField.getText().trim();
+        String projectType = (String) projectTypeComboBox.getSelectedItem();
+        String recipient = projectRecipientField.getText().trim();
+        String description = projectNotesArea.getText().trim();
+
+        // Get selected tags as a comma-delimited string
+        List<String> selectedTags = projectTagsList.getSelectedValuesList();
+        String tags = String.join(",", selectedTags);
+
+        String projectIdStr = JOptionPane.showInputDialog(this, "Enter Project ID to Update:", "Update Project", JOptionPane.QUESTION_MESSAGE);
+        if (projectIdStr != null && !projectIdStr.trim().isEmpty()) {
+            try {
+                int projectId = Integer.parseInt(projectIdStr.trim());
+                Database.updateProject(projectId, projectName, projectType, recipient, tags, description);
+                JOptionPane.showMessageDialog(this, "Project updated successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid Project ID.", "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (SQLException ex) {
+                ErrorHandler.showErrorToUser("Failed to update project data.", ex.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Sets the project details in the form fields.
+     * @param name Project name
+     * @param type Project type
+     * @param description Project description
+     * @param filePath File path of the project
+     */
+    public void setProjectDetails(String name, String type, String description, String filePath) {
+        projectNameField.setText(name);
+        projectTypeComboBox.setSelectedItem(type);
+        projectNotesArea.setText(description);
+        projectPathField.setText(filePath);
+    }
+
+    // Call the updateSchema method to ensure the database schema is up-to-date
+    static {
+        Database.updateSchema();
+    }
+
     // Add more form logic or validation as needed for future features
 }

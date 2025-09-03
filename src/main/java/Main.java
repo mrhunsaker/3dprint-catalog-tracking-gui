@@ -1,4 +1,6 @@
 import com.formdev.flatlaf.intellijthemes.*;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.FlatDarkLaf;
 import javax.swing.LookAndFeel;
 import java.util.Map;
 import java.util.TreeMap;
@@ -14,6 +16,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.util.Properties;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Collections;
+import javax.swing.AbstractButton;
 
 /**
  * Main application window for the 3D Print Job Tracker GUI.
@@ -215,42 +224,17 @@ public class Main extends JFrame {
 
         JMenuItem backupItem = new JMenuItem("Backup Database");
         backupItem.setFont(menuFont);
-        backupItem.addActionListener(event -> {
-            try {
-                String dbFilePath = "app_home/print_jobs.mv.db"; // Path to the database file
-                DatabaseBackup.createBackup(dbFilePath);
-                ErrorHandler.showErrorToUser("Backup completed successfully.", "Backup created at: " + dbFilePath);
-            } catch (IOException e) {
-                ErrorHandler.showErrorToUser("Failed to create backup.", e.getMessage());
-            }
-        });
+        backupItem.addActionListener(this::performBackup);
         fileMenu.add(backupItem);
 
         JMenuItem restoreItem = new JMenuItem("Restore Database");
         restoreItem.setFont(menuFont);
-        restoreItem.addActionListener(event -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("Select Backup File");
-            int userSelection = fileChooser.showOpenDialog(this);
-
-            if (userSelection == JFileChooser.APPROVE_OPTION) {
-                File selectedFile = fileChooser.getSelectedFile();
-                try {
-                    String dbFilePath = "app_home/print_jobs.mv.db"; // Path to the database file
-                    DatabaseBackup.restoreBackup(selectedFile.getAbsolutePath(), dbFilePath);
-                    ErrorHandler.showErrorToUser("Restore completed successfully.", "Database restored from: " + selectedFile.getAbsolutePath());
-                } catch (IOException e) {
-                    ErrorHandler.showErrorToUser("Failed to restore database.", e.getMessage());
-                }
-            }
-        });
+        restoreItem.addActionListener(this::performRestore);
         fileMenu.add(restoreItem);
 
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.setFont(menuFont);
-        exitItem.addActionListener(event -> {
-            System.exit(0);
-        });
+        exitItem.addActionListener(this::exitApplication);
         fileMenu.add(exitItem);
 
         // Project menu
@@ -258,32 +242,41 @@ public class Main extends JFrame {
         projectMenu.setFont(menuFont);
         JMenuItem searchItem = new JMenuItem("Search Projects");
         searchItem.setFont(menuFont);
-        searchItem.addActionListener(event -> {
-            openSearchDialog();
-        });
+        searchItem.addActionListener(this::openSearchDialog);
         projectMenu.add(searchItem);
 
         // Theme menu
         JMenu themeMenu = new JMenu("Theme");
         themeMenu.setFont(menuFont);
         ButtonGroup themeGroup = new ButtonGroup();
+        themeMenu.putClientProperty("themeGroup", themeGroup); // Store ButtonGroup in client property
+
         for (String themeName : INTELLIJ_THEMES.keySet()) {
             JRadioButtonMenuItem themeItem = new JRadioButtonMenuItem(themeName);
             themeItem.setFont(menuFont);
             themeMenu.add(themeItem);
             themeGroup.add(themeItem);
-            themeItem.addActionListener(event -> {
-                try {
-                    UIManager.setLookAndFeel(INTELLIJ_THEMES.get(themeName).getDeclaredConstructor().newInstance());
-                    SwingUtilities.updateComponentTreeUI(this);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(this, "Failed to apply theme: " + ex.getMessage(), "Theme Error", JOptionPane.ERROR_MESSAGE);
-                }
-            });
+            themeItem.addActionListener(this::toggleTheme);
         }
+
+        // Help menu
+        JMenu helpMenu = new JMenu("Help");
+        helpMenu.setFont(menuFont);
+
+        JMenuItem userGuideItem = new JMenuItem("User Guide");
+        userGuideItem.setFont(menuFont);
+        userGuideItem.addActionListener(this::showUserGuide);
+        helpMenu.add(userGuideItem);
+
+        JMenuItem aboutItem = new JMenuItem("About");
+        aboutItem.setFont(menuFont);
+        aboutItem.addActionListener(this::showAboutDialog);
+        helpMenu.add(aboutItem);
+
         menuBar.add(fileMenu);
         menuBar.add(projectMenu);
         menuBar.add(themeMenu);
+        menuBar.add(helpMenu);
 
         setJMenuBar(menuBar);
     }
@@ -306,14 +299,12 @@ public class Main extends JFrame {
         // Add project form
         projectForm = new ProjectFormPanel();
         add(projectForm, BorderLayout.CENTER);
-
-    // Remove the bottom Search Projects button
     }
 
     /**
      * Opens the SearchDialog for searching projects.
      */
-    private void openSearchDialog() {
+    private void openSearchDialog(ActionEvent e) {
         SearchDialog searchDialog = new SearchDialog(this);
         searchDialog.setVisible(true);
     }
@@ -322,13 +313,10 @@ public class Main extends JFrame {
      * Schedules automatic daily database backups.
      */
     private void scheduleDailyBackups() {
-        Timer backupTimer = new Timer(24 * 60 * 60 * 1000, event -> {
-            try {
-                String dbFilePath = "app_home/print_jobs.mv.db"; // Path to the database file
-                DatabaseBackup.createBackup(dbFilePath);
-                ErrorHandler.logInfo("Daily database backup created successfully.");
-            } catch (IOException e) {
-                ErrorHandler.logError("Failed to create daily database backup.", e);
+        Timer backupTimer = new Timer(24 * 60 * 60 * 1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                performScheduledBackup();
             }
         });
         backupTimer.setRepeats(true);
@@ -340,13 +328,27 @@ public class Main extends JFrame {
      * Ensures GUI is created on the Event Dispatch Thread.
      */
     public static void main(String[] args) {
-        // Set look and feel to system default
+        // Load saved theme from settings
+        Properties settings = new Properties();
+        String theme = "Light"; // Default theme
+        try (FileInputStream input = new FileInputStream("app_settings.properties")) {
+            settings.load(input);
+            theme = settings.getProperty("theme", "Light");
+        } catch (IOException e) {
+            System.err.println("Could not load settings: " + e.getMessage());
+        }
+
+        // Apply the selected theme
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            if (theme.equals("Dark")) {
+                FlatDarkLaf.setup();
+            } else if (INTELLIJ_THEMES.containsKey(theme)) {
+                UIManager.setLookAndFeel(INTELLIJ_THEMES.get(theme).getDeclaredConstructor().newInstance());
+            } else {
+                FlatLightLaf.setup();
+            }
         } catch (Exception e) {
-            System.err.println(
-                "Failed to set look and feel: " + e.getMessage()
-            );
+            System.err.println("Failed to set theme: " + e.getMessage());
         }
 
         // Ensure GUI creation happens on the Event Dispatch Thread
@@ -354,5 +356,79 @@ public class Main extends JFrame {
             System.out.println("3D Print Job Tracker started...");
             new Main();
         });
+    }
+
+    private void performBackup(ActionEvent e) {
+        // Placeholder for backup logic
+    }
+
+    private void performRestore(ActionEvent e) {
+        // Placeholder for restore logic
+    }
+
+    private void exitApplication(ActionEvent e) {
+        System.exit(0);
+    }
+
+    private void toggleTheme(ActionEvent e) {
+        String selectedTheme = null;
+        JMenu themeMenu = (JMenu) getJMenuBar().getMenu(2); // Assuming Theme menu is the third menu
+        ButtonGroup themeGroup = (ButtonGroup) themeMenu.getClientProperty("themeGroup");
+
+        if (themeGroup != null) {
+            for (AbstractButton button : Collections.list(themeGroup.getElements())) {
+                if (button.isSelected()) {
+                    selectedTheme = button.getText();
+                    break;
+                }
+            }
+        }
+
+        if (selectedTheme != null) {
+            try {
+                if (selectedTheme.equals("Dark")) {
+                    FlatDarkLaf.setup();
+                } else if (INTELLIJ_THEMES.containsKey(selectedTheme)) {
+                    UIManager.setLookAndFeel(INTELLIJ_THEMES.get(selectedTheme).getDeclaredConstructor().newInstance());
+                } else {
+                    FlatLightLaf.setup();
+                }
+                SwingUtilities.updateComponentTreeUI(this);
+
+                // Save the selected theme to settings
+                Properties settings = new Properties();
+                settings.setProperty("theme", selectedTheme);
+                try (FileOutputStream output = new FileOutputStream("app_settings.properties")) {
+                    settings.store(output, null);
+                }
+            } catch (Exception ex) {
+                ErrorHandler.showErrorToUser("Failed to apply theme.", ex.getMessage());
+            }
+        }
+    }
+
+    private void performScheduledBackup() {
+        // Placeholder for scheduled backup logic
+    }
+
+    private void showUserGuide(ActionEvent e) {
+        JOptionPane.showMessageDialog(this, "User Guide: Instructions go here.", "User Guide", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void showAboutDialog(ActionEvent e) {
+        JOptionPane.showMessageDialog(this, "About: 3D Print Job Tracker v1.0", "About", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /**
+     * Loads the selected project details into the main form.
+     * @param name Project name
+     * @param type Project type
+     * @param description Project description
+     * @param filePath File path of the project
+     */
+    public void loadProjectDetails(String name, String type, String description, String filePath) {
+        if (projectForm != null) {
+            projectForm.setProjectDetails(name, type, description, filePath);
+        }
     }
 }

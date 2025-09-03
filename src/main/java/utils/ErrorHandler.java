@@ -11,10 +11,13 @@ public class ErrorHandler {
 
     static {
         try {
-            FileHandler fileHandler = new FileHandler("app_home/logs/app.log", true);
+            String logFilePath = System.getProperty("app.log.path", "app_home/logs/app.log");
+            FileHandler fileHandler = new FileHandler(logFilePath, 1024 * 1024, 5, true); // 1MB per file, 5 files max
             fileHandler.setFormatter(new SimpleFormatter());
-            logger.addHandler(fileHandler);
-            logger.setLevel(Level.ALL);
+            synchronized (logger) {
+                logger.addHandler(fileHandler);
+                logger.setLevel(Level.ALL);
+            }
         } catch (Exception e) {
             System.err.println("Failed to initialize logging: " + e.getMessage());
         }
@@ -49,14 +52,15 @@ public class ErrorHandler {
     }
 
     /**
-     * Displays a user-friendly error message.
+     * Displays a user-friendly error message using a GUI dialog.
      *
      * @param userMessage The message to display to the user.
      * @param technicalDetails Technical details for logging.
      */
     public static void showErrorToUser(String userMessage, String technicalDetails) {
         logError(userMessage, new Exception(technicalDetails));
-        // Display user-friendly message (e.g., JOptionPane or console output)
-        System.err.println(userMessage);
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            javax.swing.JOptionPane.showMessageDialog(null, userMessage, "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        });
     }
 }

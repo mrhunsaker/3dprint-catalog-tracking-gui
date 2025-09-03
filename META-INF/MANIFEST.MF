@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Created-By: Maven JAR Plugin 3.4.1
+Build-Jdk-Spec: 24
+Class-Path: h2-2.2.224.jar jcalendar-1.4.jar flatlaf-intellij-themes-3.2
+ .jar flatlaf-3.2.jar commons-codec-1.15.jar json-20210307.jar
+Main-Class: Main
+

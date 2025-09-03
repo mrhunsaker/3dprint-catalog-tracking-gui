@@ -24,11 +24,17 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <transformers>
-                <transformer>
-                  <mainClass>Main</mainClass>
-                </transformer>
-              </transformers>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <finalName>print-job-tracker-2025-08-beta-shaded</finalName>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/LICENSE</exclude>
+                    <exclude>module-info.class</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>

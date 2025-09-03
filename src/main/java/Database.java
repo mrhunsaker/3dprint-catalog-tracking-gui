@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import utils.DatabaseBackup;
+
 /**
  * Utility class for database operations related to 3D print projects.
  * Provides methods for connecting, inserting projects, and adding print dates.
@@ -234,6 +235,74 @@ public class Database {
         } catch (IOException e) {
             System.err.println("Failed to recover database: " + e.getMessage());
         }
+    }
+
+    /**
+     * Updates the database schema to include new columns and tables.
+     * Adds recipient column, modifies tags, and ensures project_type is updatable.
+     */
+    public static void updateSchema() {
+        try (Connection conn = connectWithTimeout()) {
+            try (Statement stmt = conn.createStatement()) {
+                // Add recipient column to projects table
+                stmt.executeUpdate("ALTER TABLE projects ADD COLUMN IF NOT EXISTS recipient VARCHAR(255)");
+
+                // Modify tags to support multiple values (if using delimited string)
+                stmt.executeUpdate("ALTER TABLE projects ADD COLUMN IF NOT EXISTS tags VARCHAR(1024)");
+
+                // Ensure project_type column is updatable (no schema change needed if already present)
+                System.out.println("Schema updated successfully.");
+            }
+        } catch (SQLException e) {
+            ErrorHandler.logError("Failed to update database schema.", e);
+        }
+    }
+
+    /**
+     * Loads project data by ID.
+     * @param projectId The ID of the project to load.
+     * @return A ResultSet containing the project data.
+     * @throws SQLException if a database access error occurs.
+     */
+    public static ResultSet loadProjectById(int projectId) throws SQLException {
+        final String sql = "SELECT * FROM projects WHERE id = ?";
+        Connection conn = connectWithTimeout();
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setInt(1, projectId);
+        return pstmt.executeQuery();
+    }
+
+    /**
+     * Updates project details in the database.
+     * @param projectId   The ID of the project to update.
+     * @param name        The updated project name.
+     * @param projectType The updated project type.
+     * @param recipient   The updated recipient name.
+     * @param tags        The updated tags (as a delimited string).
+     * @param description The updated project description.
+     * @throws SQLException if a database access error occurs.
+     */
+    public static void updateProject(
+        int projectId,
+        String name,
+        String projectType,
+        String recipient,
+        String tags,
+        String description
+    ) throws SQLException {
+        final String sql = "UPDATE projects SET name = ?, project_type = ?, recipient = ?, tags = ?, description = ? WHERE id = ?";
+
+        executeTransaction(conn -> {
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, name);
+                pstmt.setString(2, projectType);
+                pstmt.setString(3, recipient);
+                pstmt.setString(4, tags);
+                pstmt.setString(5, description);
+                pstmt.setInt(6, projectId);
+                pstmt.executeUpdate();
+            }
+        });
     }
 
     // Add more database utility methods as needed
