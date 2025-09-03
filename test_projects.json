@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "name": "Project A",
+        "project_type": "Model",
+        "file_path": "path/to/projectA",
+        "description": "Description for Project A",
+        "created_date": "2025-09-01"
+    },
+    {
+        "id": 2,
+        "name": "Project B",
+        "project_type": "Prototype",
+        "file_path": "path/to/projectB",
+        "description": "Description for Project B",
+        "created_date": "2025-09-02"
+    }
+]

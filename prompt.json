@@ -1,0 +1,270 @@
+{
+  "project_context": {
+    "name": "3D Print Job Tracker",
+    "description": "Java Swing application for managing 3D print projects with H2 database backend",
+    "current_files": [
+      "src/main/java/Main.java",
+      "src/main/java/Database.java", 
+      "src/main/java/FileUtils.java",
+      "src/main/java/Project.java",
+      "src/main/java/ProjectFormPanel.java",
+      "src/main/java/SearchDialog.java"
+    ],
+    "database_tables": [
+      "projects (id, name, project_type, file_path, description, created_date)",
+      "last_printed_dates (id, project_id, print_date)"
+    ]
+  },
+  
+  "enhancement_request": {
+    "priority": "HIGH - Safety and Data Protection First",
+    "scope": "Comprehensive improvement focusing on robustness, safety, and reporting capabilities",
+    
+    "phase_1_safety_data_validation": {
+      "description": "Critical safety and data integrity improvements - implement first",
+      "requirements": [
+        {
+          "feature": "Input Validation & Sanitization",
+          "details": [
+            "Add comprehensive input validation for all form fields",
+            "Sanitize project names to prevent file system issues (remove invalid characters)",
+            "Validate date formats and ranges (prevent future dates, invalid dates)",
+            "Validate file paths exist and are accessible before operations",
+            "Add length limits for text fields (name: 255 chars, description: 1000 chars)",
+            "Prevent SQL injection with proper parameterized queries validation"
+          ]
+        },
+        {
+          "feature": "Database Backup & Recovery",
+          "details": [
+            "Create DatabaseBackup.java utility class",
+            "Implement automatic daily database backups to app_home/backups/",
+            "Add manual backup/restore functionality in File menu",
+            "Include backup verification (test restore capability)",
+            "Implement database integrity checks on startup",
+            "Add recovery from corrupted database scenarios"
+          ]
+        },
+        {
+          "feature": "Enhanced Error Handling",
+          "details": [
+            "Create ErrorHandler.java utility for centralized error management",
+            "Replace generic try-catch blocks with specific error handling",
+            "Add user-friendly error messages with suggested solutions",
+            "Implement retry mechanisms for transient failures",
+            "Add logging framework (java.util.logging) for debugging",
+            "Handle edge cases: disk full, permissions denied, network issues"
+          ]
+        },
+        {
+          "feature": "File System Safety",
+          "details": [
+            "Check available disk space before copying large folders",
+            "Implement atomic operations (rollback on partial failures)",
+            "Handle file conflicts with user choice dialogs",
+            "Verify file permissions before operations",
+            "Add file integrity verification after copying",
+            "Prevent overwriting existing projects without confirmation"
+          ]
+        },
+        {
+          "feature": "Transaction Safety",
+          "details": [
+            "Wrap database + file operations in transactions",
+            "Implement rollback for failed project additions",
+            "Add database connection pooling for reliability",
+            "Handle concurrent access scenarios",
+            "Add database lock handling and timeout management"
+          ]
+        }
+      ]
+    },
+
+    "phase_2_json_reporting": {
+      "description": "JSON export capabilities and comprehensive reporting - implement after Phase 1",
+      "requirements": [
+        {
+          "feature": "JSON Export System",
+          "details": [
+            "Create JsonExporter.java utility class",
+            "Export individual projects to JSON format with all metadata",
+            "Export complete database to JSON (projects + print dates)",
+            "Include file checksums and metadata in JSON exports",
+            "Add JSON schema validation for imports",
+            "Support both pretty-printed and compact JSON formats"
+          ]
+        },
+        {
+          "feature": "JSON Import System", 
+          "details": [
+            "Create JsonImporter.java utility class",
+            "Import projects from JSON files with validation",
+            "Handle duplicate project detection during import",
+            "Support partial imports (skip corrupted entries)",
+            "Add import preview with conflict resolution",
+            "Validate JSON structure before processing"
+          ]
+        },
+        {
+          "feature": "Advanced Reporting Engine",
+          "details": [
+            "Create ReportGenerator.java class for various report types",
+            "Generate project frequency reports (most/least printed)",
+            "Create timeline reports showing project creation/printing patterns",
+            "Storage usage reports by project type and date ranges",
+            "Print history analytics (busiest print days, gaps in printing)",
+            "Export reports as JSON, CSV, and HTML formats"
+          ]
+        },
+        {
+          "feature": "Report Visualization",
+          "details": [
+            "Add basic charts using Java's built-in graphics or simple HTML generation",
+            "Bar charts for project counts by type/tag",
+            "Timeline charts for print frequency over time",
+            "Pie charts for storage usage by category",
+            "Interactive HTML reports with embedded CSS/JavaScript",
+            "Print-friendly report layouts"
+          ]
+        }
+      ]
+    },
+
+    "phase_3_enhanced_usability": {
+      "description": "Advanced user experience improvements - implement last",
+      "requirements": [
+        {
+          "feature": "Configuration Management",
+          "details": [
+            "Create Settings.java class for application preferences",
+            "Persistent settings storage (app_home/config/settings.json)",
+            "Configurable default values for form fields",
+            "Theme preference persistence",
+            "Backup schedule configuration",
+            "Default file locations and project templates"
+          ]
+        },
+        {
+          "feature": "Enhanced Project Operations",
+          "details": [
+            "Add edit project functionality with validation",
+            "Implement project deletion with confirmation and cleanup",
+            "Project archiving (mark as archived without deletion)",
+            "Project templates for common project types",
+            "Bulk operations (delete multiple, export selected)",
+            "Project duplication with smart naming"
+          ]
+        },
+        {
+          "feature": "Advanced Search & Filtering",
+          "details": [
+            "Add date range filters in search dialog",
+            "Multi-criteria search (name + type + tags simultaneously)",
+            "Saved search queries for frequently used filters",
+            "Search history and suggestions",
+            "Real-time search as you type",
+            "Advanced sorting options (multiple columns)"
+          ]
+        }
+      ]
+    }
+  },
+
+  "implementation_guidelines": {
+    "code_standards": [
+      "Maintain existing code style and documentation patterns",
+      "Add comprehensive JavaDoc comments for all new methods",
+      "Use existing naming conventions and package structure",
+      "Preserve backward compatibility with existing database schema",
+      "Follow defensive programming practices",
+      "Include unit test suggestions for critical functionality"
+    ],
+    
+    "error_handling_patterns": [
+      "Use specific exception types rather than generic Exception",
+      "Provide actionable error messages to users",
+      "Log technical details for debugging while showing user-friendly messages",
+      "Implement graceful degradation when non-critical features fail",
+      "Add validation at UI layer AND business logic layer"
+    ],
+
+    "file_structure_additions": [
+      "src/main/java/utils/ErrorHandler.java",
+      "src/main/java/utils/DatabaseBackup.java", 
+      "src/main/java/utils/JsonExporter.java",
+      "src/main/java/utils/JsonImporter.java",
+      "src/main/java/reports/ReportGenerator.java",
+      "src/main/java/config/Settings.java",
+      "app_home/config/settings.json",
+      "app_home/backups/",
+      "app_home/exports/",
+      "app_home/logs/"
+    ]
+  },
+
+  "specific_instructions": {
+    "for_safety_features": [
+      "Implement ALL validation before any file or database operations",
+      "Create comprehensive test scenarios for edge cases",
+      "Add rollback capability for all multi-step operations", 
+      "Ensure no data loss scenarios exist",
+      "Test with malformed inputs, special characters, very long strings",
+      "Handle interruption scenarios (user closes app during operations)"
+    ],
+    
+    "for_json_features": [
+      "Use standard JSON libraries (org.json or Jackson if available)",
+      "Include complete project metadata in JSON exports",
+      "Add version numbers to JSON format for future compatibility",
+      "Implement streaming for large exports to handle memory efficiently",
+      "Include file checksums in JSON for integrity verification",
+      "Support incremental exports (only changed projects since last export)"
+    ],
+    
+    "for_reporting": [
+      "Generate reports using existing project data without external dependencies",
+      "Create both summary and detailed report formats",
+      "Include data visualization using basic Java graphics or HTML/CSS",
+      "Make reports self-contained (HTML with embedded styles)",
+      "Add report scheduling and automatic generation options",
+      "Include export to multiple formats from same data source"
+    ]
+  },
+
+  "testing_requirements": {
+    "critical_test_scenarios": [
+      "Test project addition with various folder sizes (empty, small, large)",
+      "Test with special characters in project names and paths",
+      "Test database corruption recovery scenarios",
+      "Test disk space exhaustion during file copying",
+      "Test network drive access and UNC paths",
+      "Test concurrent access (multiple instances)",
+      "Test malformed JSON import files",
+      "Test very long project names and descriptions"
+    ]
+  },
+
+  "success_criteria": {
+    "phase_1_complete": [
+      "No data loss possible under normal operation",
+      "All user inputs properly validated and sanitized", 
+      "Automatic recovery from common failure scenarios",
+      "Clear, actionable error messages for all failure modes",
+      "Database backup system operational and tested"
+    ],
+    
+    "phase_2_complete": [
+      "Complete project data exportable to JSON format",
+      "JSON imports work reliably with validation",
+      "Multiple report types generate successfully",
+      "Reports include meaningful analytics and visualizations",
+      "Export/import preserves all project relationships and metadata"
+    ]
+  },
+
+  "prompt_usage": {
+    "instruction": "Use this JSON as context when requesting LLM assistance. Provide the current codebase and specify which phase/features to implement. The LLM should prioritize the safety features in Phase 1 before moving to JSON/reporting features in Phase 2.",
+    
+    "example_request": "Please implement the Phase 1 safety features for my 3D Print Job Tracker app. Focus on input validation, error handling, and database backup functionality. Here are my current Java files: [attach files]. Follow the specifications in the prompt.json file I'm providing."
+  }
+}

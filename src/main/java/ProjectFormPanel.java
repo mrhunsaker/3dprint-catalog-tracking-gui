@@ -6,13 +6,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Vector;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Calendar;
+import utils.ErrorHandler;
 
 /**
  * Panel for entering and submitting new 3D print project data.
@@ -194,7 +192,7 @@ public class ProjectFormPanel extends JPanel {
         datePickerButton.addActionListener(this::openDatePicker); // Open date picker
         removeDateButton.addActionListener(this::removeSelectedDate); // Remove selected date
         addProjectButton.addActionListener(this::addNewProject); // Submit project
-        searchProjectsButton.addActionListener(e -> {
+        searchProjectsButton.addActionListener(e -> { // `e` is unused but required by ActionListener
             // Open the SearchDialog for searching projects
             JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
             SearchDialog dialog = new SearchDialog(parentFrame);
@@ -266,7 +264,7 @@ public class ProjectFormPanel extends JPanel {
         JButton okButton = new JButton("OK");
         JButton cancelButton = new JButton("Cancel");
         
-        okButton.addActionListener(ev -> {
+        okButton.addActionListener(ev -> { // `ev` is unused but required by ActionListener
             Date selectedDate = (Date) dateSpinner.getValue();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             String formattedDate = sdf.format(selectedDate);
@@ -274,7 +272,7 @@ public class ProjectFormPanel extends JPanel {
             dateDialog.dispose();
         });
         
-        cancelButton.addActionListener(ev -> dateDialog.dispose());
+        cancelButton.addActionListener(ev -> dateDialog.dispose()); // `ev` is unused but required by ActionListener
         
         buttonPanel.add(okButton);
         buttonPanel.add(cancelButton);
@@ -318,6 +316,79 @@ public class ProjectFormPanel extends JPanel {
     }
 
     /**
+     * Validates the project name for length and invalid characters.
+     * @param name The project name to validate.
+     * @return True if valid, false otherwise.
+     */
+    private boolean validateProjectName(String name) {
+        if (name.length() > 255) {
+            JOptionPane.showMessageDialog(this, "Project name must be 255 characters or less.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (!name.matches("[a-zA-Z0-9 _-]+")) {
+            JOptionPane.showMessageDialog(this, "Project name contains invalid characters.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Validates the date format and ensures it is not in the future.
+     * @param date The date string to validate.
+     * @return True if valid, false otherwise.
+     */
+    private boolean validateDate(String date) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            sdf.setLenient(false);
+            Date parsedDate = sdf.parse(date);
+            if (parsedDate.after(new Date())) {
+                JOptionPane.showMessageDialog(this, "Date cannot be in the future.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        } catch (Exception e) {
+            ErrorHandler.showErrorToUser(
+                "Invalid date format. Use yyyy-MM-dd.",
+                e.getMessage()
+            );
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Validates the file path for existence and accessibility.
+     * @param path The file path to validate.
+     * @return True if valid, false otherwise.
+     */
+    private boolean validateFilePath(String path) {
+        File file = new File(path);
+        if (!file.exists() || !file.isDirectory()) {
+            JOptionPane.showMessageDialog(this, "Selected folder does not exist or is not a directory.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Validates the length of the project name and description.
+     * @param name The project name to validate.
+     * @param description The project description to validate.
+     * @return True if both are valid, false otherwise.
+     */
+    private boolean validateTextLengths(String name, String description) {
+        if (name.length() > 255) {
+            JOptionPane.showMessageDialog(this, "Project name must be 255 characters or less.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        if (description.length() > 1000) {
+            JOptionPane.showMessageDialog(this, "Project description must be 1000 characters or less.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Validates all fields and submits the new project to the database.
      * Copies the project folder, inserts project data, and adds print dates.
      * Clears the form after successful submission.
@@ -325,43 +396,59 @@ public class ProjectFormPanel extends JPanel {
      * @param e Action event from add project button
      */
     private void addNewProject(ActionEvent e) {
-        String projectName = projectNameField.getText();
-        String projectType = (String) projectTypeComboBox.getSelectedItem();
-        String projectTag = (String) projectECCComboBox.getSelectedItem();
-        String projectNotes = projectNotesArea.getText();
+        String projectName = projectNameField.getText().trim();
         String filePath = (selectedFolder != null) ? selectedFolder.getAbsolutePath() : "";
+        String date = lastPrintedDateField.getText().trim();
 
-        // Validate all fields are mandatory
-        if (projectName.trim().isEmpty() || projectType == null || projectTag == null || projectNotes.trim().isEmpty() || filePath.isEmpty() || dateListModel.isEmpty()) {
-            JOptionPane.showMessageDialog(
-                this,
-                "All fields are required, including at least one date.",
-                "Input Error",
-                JOptionPane.ERROR_MESSAGE
-            );
+        // Validate inputs
+        if (!validateProjectName(projectName) || !validateFilePath(filePath) || !validateDate(date)) {
+            return;
+        }
+
+        // Validate text lengths
+        if (!validateTextLengths(projectName, projectNotesArea.getText())) {
             return;
         }
 
         try {
-            // 1. Copy the project folder to the app home directory
             Path sourcePath = Paths.get(filePath);
             Path destPath = Paths.get("app_home", "projects", projectName);
-            FileUtils.copyDirectory(sourcePath, destPath);
 
-            // 2. Insert project data into the database
-            int projectId = Database.insertProject(
-                projectName,
-                projectType,
-                destPath.toAbsolutePath().toString(),
-                projectNotes // Now using notes from the form
-            );
+            // Copy directory with conflict handling
+            FileUtils.copyDirectoryWithConflictHandling(sourcePath, destPath);
 
-            // 3. Insert last printed dates
-            List<String> dates = new ArrayList<>();
-            for (int i = 0; i < dateListModel.size(); i++) {
-                dates.add(dateListModel.get(i));
+            // Verify integrity after copying
+            if (!FileUtils.verifyIntegrity(sourcePath, destPath)) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "File integrity verification failed after copying.",
+                    "Integrity Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                FileUtils.deleteDirectory(destPath);
+                return;
             }
-            Database.addLastPrintedDates(projectId, dates);
+
+            // Insert project and dates into the database within a transaction
+            Database.executeTransaction(conn -> {
+                // Use the connection object to ensure the parameter is utilized
+                if (conn == null) {
+                    throw new SQLException("Database connection is null.");
+                }
+
+                int projectId = Database.insertProject(
+                    projectName,
+                    (String) projectTypeComboBox.getSelectedItem(),
+                    destPath.toAbsolutePath().toString(),
+                    projectNotesArea.getText()
+                );
+
+                List<String> dates = new ArrayList<>();
+                for (int i = 0; i < dateListModel.size(); i++) {
+                    dates.add(dateListModel.get(i));
+                }
+                Database.addLastPrintedDates(projectId, dates);
+            });
 
             JOptionPane.showMessageDialog(
                 this,

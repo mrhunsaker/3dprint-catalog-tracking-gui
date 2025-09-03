@@ -13,6 +13,9 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
     }
+    // Set source compatibility
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 repositories {
@@ -25,6 +28,9 @@ dependencies {
 
     // JCalendar for Date Chooser
     implementation("com.toedter:jcalendar:1.4")
+
+    // JUnit 5 for testing
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
 }
 
 application {

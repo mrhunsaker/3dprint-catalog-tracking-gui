@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import utils.ErrorHandler;
 
 /**
  * Dialog for searching and displaying 3D print projects from the database.
@@ -168,48 +169,52 @@ public class SearchDialog extends JDialog {
         try {
             FileUtils.openFolder(filePath);
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Failed to open folder: " + ex.getMessage(),
-                "File Explorer Error",
-                JOptionPane.ERROR_MESSAGE
+            ErrorHandler.showErrorToUser(
+                "Failed to open folder. Please check the file path and try again.",
+                ex.getMessage()
             );
         }
     }
 
     /**
      * Loads all projects from the database and displays them in the results table.
-     * Shows error dialog if loading fails.
+     * Shows error dialog if loading fails, with retry mechanism for transient errors.
      */
     private void loadAllProjects() {
-        try (Connection conn = Database.connect()) {
-            String sql =
-                "SELECT id, name, project_type, description, created_date, file_path FROM projects ORDER BY created_date DESC";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
+        int retryCount = 0;
+        while (retryCount < 3) {
+            try (Connection conn = Database.connect()) {
+                String sql =
+                    "SELECT id, name, project_type, description, created_date, file_path FROM projects ORDER BY created_date DESC";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                ResultSet rs = pstmt.executeQuery();
 
-            // Clear existing data
-            tableModel.setRowCount(0);
+                // Clear existing data
+                tableModel.setRowCount(0);
 
-            // Add rows to table
-            while (rs.next()) {
-                Object[] row = {
-                    rs.getInt("id"),
-                    rs.getString("name"),
-                    rs.getString("project_type"),
-                    rs.getString("description"),
-                    rs.getTimestamp("created_date"),
-                    rs.getString("file_path")
-                };
-                tableModel.addRow(row);
+                // Add rows to table
+                while (rs.next()) {
+                    Object[] row = {
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("project_type"),
+                        rs.getString("description"),
+                        rs.getTimestamp("created_date"),
+                        rs.getString("file_path")
+                    };
+                    tableModel.addRow(row);
+                }
+                return; // Exit method if successful
+            } catch (SQLException e) {
+                retryCount++;
+                ErrorHandler.logError("Failed to load projects. Attempt " + retryCount, e);
+                if (retryCount == 3) {
+                    ErrorHandler.showErrorToUser(
+                        "Failed to load projects after multiple attempts. Please check your database connection.",
+                        e.getMessage()
+                    );
+                }
             }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Failed to load projects: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE
-            );
         }
     }
 
@@ -217,7 +222,6 @@ public class SearchDialog extends JDialog {
      * Performs a search for projects by name or description using the search field value.
      * Updates the results table with matching projects.
      * Shows info dialog if no results found.
-     * Add more search logic or result actions as needed for future features
      */
     private void performSearch() {
         String searchTerm = searchField.getText().trim();
@@ -264,11 +268,10 @@ public class SearchDialog extends JDialog {
                 );
             }
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Search failed: " + e.getMessage(),
-                "Database Error",
-                JOptionPane.ERROR_MESSAGE
+            ErrorHandler.logError("Search failed", e);
+            ErrorHandler.showErrorToUser(
+                "Search failed due to a database error. Please try again later.",
+                e.getMessage()
             );
         }
     }

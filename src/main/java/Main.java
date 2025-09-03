@@ -1,15 +1,19 @@
-import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.intellijthemes.*;
 import javax.swing.LookAndFeel;
 import java.util.Map;
 import java.util.TreeMap;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import javax.swing.*;
+import utils.DatabaseBackup;
+import utils.ErrorHandler;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import javax.swing.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Main application window for the 3D Print Job Tracker GUI.
@@ -60,6 +64,67 @@ public class Main extends JFrame {
         // Initialize the database
         initializeDatabase();
 
+        // Verify database integrity on startup
+        Database.verifyDatabaseIntegrity();
+
+        // Check for database corruption on startup
+        if (Database.isDatabaseCorrupted()) {
+            int userChoice = JOptionPane.showConfirmDialog(
+                this,
+                "The database appears to be corrupted. Would you like to restore the most recent backup?",
+                "Database Corruption Detected",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.ERROR_MESSAGE
+            );
+
+            if (userChoice == JOptionPane.YES_OPTION) {
+                try {
+                    String backupDir = "app_home/backups/";
+                    File latestBackup = Files.list(Paths.get(backupDir))
+                        .filter(Files::isRegularFile)
+                        .map(Path::toFile)
+                        .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
+                        .orElse(null);
+
+                    if (latestBackup != null) {
+                        DatabaseBackup.restoreBackup(latestBackup.getAbsolutePath(), "app_home/print_jobs.mv.db");
+                        ErrorHandler.showErrorToUser("Database restored successfully.", "Restored from: " + latestBackup.getAbsolutePath());
+                    } else {
+                        ErrorHandler.showErrorToUser("No backups available to restore.", "Please create a new database.");
+                    }
+                } catch (IOException e) {
+                    ErrorHandler.showErrorToUser("Failed to restore database from backup.", e.getMessage());
+                }
+            } else {
+                ErrorHandler.showErrorToUser("Application cannot proceed with a corrupted database.", "Please restore a backup manually.");
+                System.exit(1);
+            }
+        }
+
+        // Verify the integrity of the most recent backup
+        String backupDir = "app_home/backups/";
+        try {
+            File latestBackup = Files.list(Paths.get(backupDir))
+                .filter(Files::isRegularFile)
+                .map(Path::toFile)
+                .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
+                .orElse(null);
+
+            if (latestBackup != null) {
+                boolean isBackupValid = DatabaseBackup.verifyBackupIntegrity(latestBackup.getAbsolutePath());
+                if (!isBackupValid) {
+                    ErrorHandler.showErrorToUser("The most recent backup is invalid.", "Please create a new backup.");
+                }
+            } else {
+                ErrorHandler.showErrorToUser("No backups available to verify.", "Please create a backup.");
+            }
+        } catch (IOException e) {
+            ErrorHandler.showErrorToUser("Failed to verify the most recent backup.", e.getMessage());
+        }
+
+        // Verify database and schedule backups
+        verifyDatabaseAndScheduleBackups();
+
         // Create menu bar
         createMenuBar();
 
@@ -98,15 +163,41 @@ public class Main extends JFrame {
             );
             System.out.println("Database initialized successfully");
         } catch (SQLException e) {
-            System.err.println(
-                "Failed to initialize database: " + e.getMessage()
+            ErrorHandler.showErrorToUser(
+                "Failed to initialize the database. Please check your configuration.",
+                e.getMessage()
             );
+        }
+    }
+
+    /**
+     * Verifies the integrity of the database and schedules automatic backups.
+     */
+    private void verifyDatabaseAndScheduleBackups() {
+        try {
+            // Verify database integrity
+            String dbFilePath = "app_home/print_jobs.mv.db";
+            if (!DatabaseBackup.verifyBackup(dbFilePath)) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Database integrity check failed. Please restore from a backup.",
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+                System.exit(1);
+            }
+
+            // Schedule daily backups
+            scheduleDailyBackups();
+        } catch (Exception e) {
+            ErrorHandler.logError("Failed to verify database or schedule backups", e);
             JOptionPane.showMessageDialog(
                 this,
-                "Failed to initialize database: " + e.getMessage(),
-                "Database Error",
+                "Critical error during database verification. Application will exit.",
+                "Critical Error",
                 JOptionPane.ERROR_MESSAGE
             );
+            System.exit(1);
         }
     }
 
@@ -121,9 +212,45 @@ public class Main extends JFrame {
         // File menu
         JMenu fileMenu = new JMenu("File");
         fileMenu.setFont(menuFont);
+
+        JMenuItem backupItem = new JMenuItem("Backup Database");
+        backupItem.setFont(menuFont);
+        backupItem.addActionListener(event -> {
+            try {
+                String dbFilePath = "app_home/print_jobs.mv.db"; // Path to the database file
+                DatabaseBackup.createBackup(dbFilePath);
+                ErrorHandler.showErrorToUser("Backup completed successfully.", "Backup created at: " + dbFilePath);
+            } catch (IOException e) {
+                ErrorHandler.showErrorToUser("Failed to create backup.", e.getMessage());
+            }
+        });
+        fileMenu.add(backupItem);
+
+        JMenuItem restoreItem = new JMenuItem("Restore Database");
+        restoreItem.setFont(menuFont);
+        restoreItem.addActionListener(event -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Select Backup File");
+            int userSelection = fileChooser.showOpenDialog(this);
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                try {
+                    String dbFilePath = "app_home/print_jobs.mv.db"; // Path to the database file
+                    DatabaseBackup.restoreBackup(selectedFile.getAbsolutePath(), dbFilePath);
+                    ErrorHandler.showErrorToUser("Restore completed successfully.", "Database restored from: " + selectedFile.getAbsolutePath());
+                } catch (IOException e) {
+                    ErrorHandler.showErrorToUser("Failed to restore database.", e.getMessage());
+                }
+            }
+        });
+        fileMenu.add(restoreItem);
+
         JMenuItem exitItem = new JMenuItem("Exit");
         exitItem.setFont(menuFont);
-        exitItem.addActionListener(e -> System.exit(0));
+        exitItem.addActionListener(event -> {
+            System.exit(0);
+        });
         fileMenu.add(exitItem);
 
         // Project menu
@@ -131,7 +258,9 @@ public class Main extends JFrame {
         projectMenu.setFont(menuFont);
         JMenuItem searchItem = new JMenuItem("Search Projects");
         searchItem.setFont(menuFont);
-        searchItem.addActionListener(e -> openSearchDialog());
+        searchItem.addActionListener(event -> {
+            openSearchDialog();
+        });
         projectMenu.add(searchItem);
 
         // Theme menu
@@ -143,7 +272,7 @@ public class Main extends JFrame {
             themeItem.setFont(menuFont);
             themeMenu.add(themeItem);
             themeGroup.add(themeItem);
-            themeItem.addActionListener(e -> {
+            themeItem.addActionListener(event -> {
                 try {
                     UIManager.setLookAndFeel(INTELLIJ_THEMES.get(themeName).getDeclaredConstructor().newInstance());
                     SwingUtilities.updateComponentTreeUI(this);
@@ -187,6 +316,23 @@ public class Main extends JFrame {
     private void openSearchDialog() {
         SearchDialog searchDialog = new SearchDialog(this);
         searchDialog.setVisible(true);
+    }
+
+    /**
+     * Schedules automatic daily database backups.
+     */
+    private void scheduleDailyBackups() {
+        Timer backupTimer = new Timer(24 * 60 * 60 * 1000, event -> {
+            try {
+                String dbFilePath = "app_home/print_jobs.mv.db"; // Path to the database file
+                DatabaseBackup.createBackup(dbFilePath);
+                ErrorHandler.logInfo("Daily database backup created successfully.");
+            } catch (IOException e) {
+                ErrorHandler.logError("Failed to create daily database backup.", e);
+            }
+        });
+        backupTimer.setRepeats(true);
+        backupTimer.start();
     }
 
     /**

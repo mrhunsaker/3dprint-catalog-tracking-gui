@@ -1,6 +1,11 @@
 D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\ProjectFormPanel.java
 D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\FileUtils.java
 D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\Database.java
+D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\utils\FileOperation.java
+D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\utils\FileUtils.java
+D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\utils\JsonExporter.java
 D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\Main.java
+D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\utils\ErrorHandler.java
 D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\Project.java
 D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\SearchDialog.java
+D:\GitHubRepos\3dprint-catalog-tracking-gui\src\main\java\utils\DatabaseBackup.java
