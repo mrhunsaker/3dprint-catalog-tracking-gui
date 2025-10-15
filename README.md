@@ -71,16 +71,116 @@ src/main/java/      # Source code
   Project.java      # Project data model
 ```
 
+## Database Schema
+
+The application uses an embedded H2 database. Below is the schema for the main tables:
+
+### Table: projects
+| Column      | Type         | Description                       |
+|------------ |------------- |-----------------------------------|
+| id          | INT (PK)     | Unique project ID                 |
+| name        | VARCHAR(255) | Project name/title                |
+| project_type| VARCHAR(255) | Project type (e.g., Prototype)    |
+| file_path   | VARCHAR(1024)| Absolute path to project files    |
+| description | VARCHAR(1000)| Project description/notes         |
+| created_date| TIMESTAMP    | Timestamp when project created    |
+| recipient   | VARCHAR(255) | Project recipient                 |
+| tags        | VARCHAR(1024)| Comma-separated tags              |
+
+### Table: last_printed_dates
+| Column      | Type         | Description                       |
+|------------ |------------- |-----------------------------------|
+| id          | INT (PK)     | Unique entry ID                   |
+| project_id  | INT (FK)     | Linked project ID                 |
+| print_date  | TIMESTAMP    | Date project was printed          |
+
+#### Example SQL to view all projects:
+```sql
+SELECT * FROM projects;
+```
+
+#### Example SQL to view print history for a project:
+```sql
+SELECT * FROM last_printed_dates WHERE project_id = 1;
+```
+
+## How to Use
+
+1. **Add a Project:**
+   - Click "Add Project" and fill in all required fields (name, type, recipient, tags, notes, last printed dates, folder).
+   - Use the date picker to add print dates.
+   - Select the project folder to copy files into the app's home directory.
+   - Click "Add Project" to save.
+
+2. **Search Projects:**
+   - Click "Search Projects" to open the search dialog.
+   - Enter keywords to search by name or description.
+   - Double-click a result to open its folder, or use the buttons to load details or open the folder.
+
+3. **Update Projects:**
+   - Use "Load Project" to populate the form with an existing project's data.
+   - Make changes and click "Update Project" to save.
+
+4. **Backup & Restore:**
+   - Backups are created automatically. Restore from backup via the app or by replacing the database file in `app_home/`.
+
+5. **Change Theme:**
+   - Use the menu bar to select a preferred UI theme.
+
+6. **Access Database Directly:**
+   - See `connect_h2.md` for instructions on accessing and editing the database using the H2 Console.
+
+## Troubleshooting
+
+- If you encounter errors, check that Java 17+ is installed and all dependencies are present.
+- For database issues, verify the integrity using the app or H2 Console.
+- For file copy errors, ensure you have permission to access the selected folders.
+
+## How to Contribute
+
+We welcome contributions from everyone, regardless of technical experience!
+
+### For Non-Technical Users
+- **Suggest Features or Report Bugs:**
+  - Go to the GitHub repository and click on the "Issues" tab.
+  - Click "New Issue" and describe your suggestion or problem in detail.
+- **Test the App:**
+  - Download the latest release from the "Releases" section.
+  - Try out features and let us know what works or what could be improved.
+
+### For Developers
+- **Fork the Repository:**
+  - Click "Fork" at the top right of the GitHub page.
+- **Clone Your Fork:**
+  - Use `git clone <your-fork-url>` to get a local copy.
+- **Create a Branch:**
+  - Use `git checkout -b feature/your-feature-name`.
+- **Make Changes:**
+  - Edit code, documentation, or add tests.
+- **Commit and Push:**
+  - Use `git commit -m "Describe your change"` and `git push`.
+- **Open a Pull Request:**
+  - Go to your fork on GitHub, click "Pull Requests", and open a new PR to the main repository.
+
+### Code Style & Guidelines
+- Write clear, descriptive commit messages.
+- Add Javadoc comments for new methods/classes.
+- Test your changes before submitting.
+- For questions, open an issue or ask in the discussions tab.
+
+---
+For questions or contributions, open an issue or pull request on GitHub.
+
 ## Customization
 - Add new project types or tags in `ProjectFormPanel.java`.
 - Extend the database schema in `Main.java` and `Database.java`.
 - Add new themes by updating the theme map in `Main.java`.
 
 ## License
-MIT License
+Apache 2.0 License
 
 ## Author
-mrhunsaker
+Michael Ryan Hunsaker, M.Ed., Ph.D. <hunsakerconsulting@gmaillcom>
 
 ---
 For questions or contributions, open an issue or pull request on GitHub.
