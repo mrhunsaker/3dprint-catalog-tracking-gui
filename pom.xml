@@ -92,7 +92,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>print-job-tracker-2025-08-beta-uber</finalName>
+                            <finalName>print-job-tracker-1.0.0</finalName>
                             <outputDirectory>${project.build.directory}</outputDirectory>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <filters>
