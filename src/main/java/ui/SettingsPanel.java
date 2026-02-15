@@ -6,13 +6,29 @@ import java.io.*;
 import java.util.Properties;
 import java.awt.event.ActionEvent;
 
+/**
+ * Simple settings UI panel that allows editing small application preferences
+ * persisted to `app_settings.properties` in the application working directory.
+ *
+ * The panel currently supports the database path and a theme selection.
+ */
 public class SettingsPanel extends JPanel {
 
+    /** Input field for the database path. */
     private JTextField databasePathField;
+
+    /** Selector for choosing the application theme. */
     private JComboBox<String> themeSelector;
+
+    /** In-memory settings loaded from `app_settings.properties`. */
     private Properties settings;
+
+    /** Filename where application settings are persisted. */
     private static final String SETTINGS_FILE = "app_settings.properties";
 
+    /**
+     * Create the settings panel and load persisted values.
+     */
     public SettingsPanel() {
         setLayout(new BorderLayout());
         settings = new Properties();
@@ -38,6 +54,9 @@ public class SettingsPanel extends JPanel {
         add(saveButton, BorderLayout.SOUTH);
     }
 
+    /**
+     * Load settings from the properties file. Missing file is treated as defaults.
+     */
     private void loadSettings() {
         try (InputStream input = new FileInputStream(SETTINGS_FILE)) {
             settings.load(input);
@@ -46,6 +65,11 @@ public class SettingsPanel extends JPanel {
         }
     }
 
+    /**
+     * Persist the current values to the properties file.
+     *
+     * @param event action event from the Save button
+     */
     private void saveSettings(ActionEvent event) {
         settings.setProperty("databasePath", databasePathField.getText());
         settings.setProperty("theme", (String) themeSelector.getSelectedItem());

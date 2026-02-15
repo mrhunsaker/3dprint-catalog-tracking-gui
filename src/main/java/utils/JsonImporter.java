@@ -11,17 +11,27 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * Utility class for importing data from JSON files.
+ * Utilities to import project metadata from JSON files.
+ * <p>
+ * The expected JSON format is an array of objects where each object contains
+ * fields such as `id`, `name`, `project_type`, `file_path`, `description` and
+ * `created_date`.
+ * </p>
+ *
+ * Example file content:
+ * <pre>
+ * [ { "id": 1, "name": "Box", "file_path": "/tmp/box", "description": "..." } ]
+ * </pre>
  */
 public class JsonImporter {
 
     /**
-     * Imports projects from a JSON file.
+     * Read a JSON array of projects and return a list of maps with the extracted fields.
      *
-     * @param filePath The path to the JSON file.
-     * @return A list of maps, each representing a project.
-     * @throws IOException If an error occurs during file reading.
-     * @throws JSONException If the JSON structure is invalid.
+     * @param filePath path to JSON file
+     * @return list of project maps
+     * @throws IOException when file cannot be read
+     * @throws JSONException when parsing fails or expected keys are missing
      */
     public static List<Map<String, Object>> importProjects(String filePath) throws IOException, JSONException {
         List<Map<String, Object>> projects = new ArrayList<>();
@@ -38,7 +48,6 @@ public class JsonImporter {
                 JSONObject projectJson = projectsJson.getJSONObject(j);
                 Map<String, Object> project = new HashMap<>();
 
-                // Validate and extract project fields
                 project.put("id", projectJson.optInt("id", -1));
                 project.put("name", projectJson.getString("name"));
                 project.put("project_type", projectJson.optString("project_type", ""));
@@ -54,10 +63,10 @@ public class JsonImporter {
     }
 
     /**
-     * Validates the structure of a JSON file before importing.
+     * Quick validation that the file contains a JSON array. Returns false on any parse or IO error.
      *
-     * @param filePath The path to the JSON file.
-     * @return true if the JSON structure is valid, false otherwise.
+     * @param filePath path to validate
+     * @return true when the file contains a parsable JSON array
      */
     public static boolean validateJsonStructure(String filePath) {
         try (FileReader reader = new FileReader(filePath)) {
@@ -72,5 +81,12 @@ public class JsonImporter {
         } catch (IOException | JSONException e) {
             return false;
         }
+    }
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private JsonImporter() {
+        // utility class
     }
 }

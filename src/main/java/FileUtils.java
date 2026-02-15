@@ -3,34 +3,32 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import javax.swing.JOptionPane;
+import java.awt.GraphicsEnvironment;
 import utils.ErrorHandler;
 
 /**
- * Utility class for file operations such as copying directories and opening folders.
- * Extend this class with additional file-related utilities as needed.
+ * Utility class for common file operations used by the UI and import helpers.
+ * <p>
+ * Methods in this class are convenience wrappers around {@link java.nio.file.Files}
+ * which add simple error handling and small UI prompts when user interaction is required.
+ * </p>
+ *
+ * @since 1.0.0
  */
 public class FileUtils {
 
     /**
-     * Recursively copies a directory and its contents from sourceDir to destDir.
-     * If files already exist in the destination, they will be replaced.
+     * Recursively copy a directory tree from {@code sourceDir} to {@code destDir}.
+     * Existing files at the destination will be replaced.
      *
-     * @param sourceDir The source directory to copy.
-     * @param destDir   The destination directory.
-     * @throws IOException if an I/O error occurs during copying.
-     *
-     * Example usage:
-     * <pre>
-     *     FileUtils.copyDirectory(Paths.get("srcDir"), Paths.get("destDir"));
-     * </pre>
+     * @param sourceDir root path to copy from
+     * @param destDir root path to copy to
+     * @throws IOException when IO fails during traversal or copy
      */
     public static void copyDirectory(Path sourceDir, Path destDir) throws IOException {
-        // Walk through all files and directories in sourceDir
         Files.walk(sourceDir).forEach(sourcePath -> {
             try {
-                // Calculate destination path by preserving relative structure
                 Path destPath = destDir.resolve(sourceDir.relativize(sourcePath));
-                // Copy file or directory, replacing if exists
                 Files.copy(sourcePath, destPath, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 ErrorHandler.logError("Failed to copy file: " + sourcePath, e);
@@ -39,28 +37,23 @@ public class FileUtils {
     }
 
     /**
-     * Opens a folder in the native file explorer (Windows, macOS, Linux).
+     * Open the operating system's file browser at the given path.
      *
-     * @param path The path of the folder to open.
-     * @throws IOException if an I/O error occurs or the folder cannot be opened.
-     *
-     * Example usage:
-     * <pre>
-     *     FileUtils.openFolder("C:/Users/Example/Folder");
-     * </pre>
+     * @param path filesystem path to open
+     * @throws IOException if the platform does not support Desktop operations or the path cannot be opened
      */
     public static void openFolder(String path) throws IOException {
-        // Uses Desktop API to open the folder in the system's file explorer
         Desktop.getDesktop().open(new File(path));
     }
 
     /**
-     * Checks if there is enough disk space available before copying a directory.
+     * Estimate whether the destination has enough usable space to copy the full
+     * contents of the source directory. This is a best-effort check.
      *
-     * @param sourceDir The source directory to copy.
-     * @param destDir   The destination directory.
-     * @return True if there is enough space, false otherwise.
-     * @throws IOException if an I/O error occurs.
+     * @param sourceDir path to source directory
+     * @param destDir path to destination directory (used to query filesystem stats)
+     * @return true when available space >= required size
+     * @throws IOException on IO errors while computing sizes
      */
     public static boolean hasEnoughDiskSpace(Path sourceDir, Path destDir) throws IOException {
         long requiredSpace = Files.walk(sourceDir)
@@ -82,11 +75,12 @@ public class FileUtils {
     }
 
     /**
-     * Copies a directory atomically, rolling back on failure.
+     * Attempt to copy an entire directory atomically; if any copy fails the
+     * destination tree will be deleted to avoid partial state.
      *
-     * @param sourceDir The source directory to copy.
-     * @param destDir   The destination directory.
-     * @throws IOException if an I/O error occurs.
+     * @param sourceDir source directory
+     * @param destDir destination directory
+     * @throws IOException when copy or rollback fails
      */
     public static void copyDirectoryAtomically(Path sourceDir, Path destDir) throws IOException {
         if (!hasEnoughDiskSpace(sourceDir, destDir)) {
@@ -114,14 +108,15 @@ public class FileUtils {
     }
 
     /**
-     * Deletes a directory and its contents.
+     * Recursively delete a directory. Errors during deletion are logged but
+     * do not stop the traversal.
      *
-     * @param dir The directory to delete.
-     * @throws IOException if an I/O error occurs.
+     * @param dir path to remove
+     * @throws IOException if an IO error prevents traversal
      */
     public static void deleteDirectory(Path dir) throws IOException {
         Files.walk(dir)
-            .sorted((path1, path2) -> path2.compareTo(path1)) // Reverse order to delete children first
+            .sorted((path1, path2) -> path2.compareTo(path1)) // reverse order
             .forEach(path -> {
                 try {
                     Files.delete(path);
@@ -132,12 +127,12 @@ public class FileUtils {
     }
 
     /**
-     * Verifies file permissions and integrity after copying.
+     * Verify copied files match the source by checking file presence and size.
      *
-     * @param sourceDir The source directory.
-     * @param destDir   The destination directory.
-     * @return True if all files are accessible and match the source, false otherwise.
-     * @throws IOException if an I/O error occurs.
+     * @param sourceDir source
+     * @param destDir destination
+     * @return true when every file exists in the destination and sizes match
+     * @throws IOException on IO error
      */
     public static boolean verifyIntegrity(Path sourceDir, Path destDir) throws IOException {
         return Files.walk(sourceDir)
@@ -157,12 +152,17 @@ public class FileUtils {
     }
 
     /**
-     * Handles file conflicts by prompting the user for action.
+     * Prompt the user for conflict resolution when a destination path already exists.
      *
-     * @param destPath The destination path where the conflict occurred.
-     * @return True if the user chooses to overwrite, false otherwise.
+     * @param destPath conflicted destination path
+     * @return true when user chooses to overwrite
      */
     public static boolean handleFileConflict(Path destPath) {
+        // In headless environments (CI/tests) default to overwriting to avoid blocking.
+        if (GraphicsEnvironment.isHeadless()) {
+            return true;
+        }
+
         int choice = JOptionPane.showConfirmDialog(
             null,
             "The file or directory " + destPath.getFileName() + " already exists. Do you want to overwrite it?",
@@ -174,11 +174,12 @@ public class FileUtils {
     }
 
     /**
-     * Copies a directory with conflict handling.
+     * Copy directory tree but prompt for conflicts. If the user declines for a
+     * specific file, that file is skipped while others continue.
      *
-     * @param sourceDir The source directory to copy.
-     * @param destDir   The destination directory.
-     * @throws IOException if an I/O error occurs.
+     * @param sourceDir source path
+     * @param destDir destination path
+     * @throws IOException on IO failure
      */
     public static void copyDirectoryWithConflictHandling(Path sourceDir, Path destDir) throws IOException {
         Files.walk(sourceDir).forEach(sourcePath -> {
@@ -201,4 +202,11 @@ public class FileUtils {
         });
     }
     // Future file utility methods can be added here
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private FileUtils() {
+        // utility class
+    }
 }

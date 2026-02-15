@@ -3,10 +3,16 @@ package utils;
 import java.util.logging.*;
 
 /**
- * Centralized error handling utility class.
+ * Centralized error and logging helper used across the UI and utilities.
+ *
+ * This class configures a file-based {@link java.util.logging.Logger} and
+ * exposes convenience methods to log at common levels. It also provides a
+ * helper to display user-facing error dialogs while ensuring the technical
+ * details are written to the log file.
  */
 public class ErrorHandler {
 
+    /** Logger used for application diagnostics and error recording. */
     private static final Logger logger = Logger.getLogger(ErrorHandler.class.getName());
 
     static {
@@ -24,43 +30,52 @@ public class ErrorHandler {
     }
 
     /**
-     * Logs an error message and exception details.
+     * Log a severe error with an exception.
      *
-     * @param message The error message.
-     * @param throwable The exception to log.
+     * @param message short human-readable message
+     * @param throwable throwable to include in the log
      */
     public static void logError(String message, Throwable throwable) {
         logger.log(Level.SEVERE, message, throwable);
     }
 
     /**
-     * Logs a warning message.
+     * Log a warning message.
      *
-     * @param message The warning message.
+     * @param message warning text
      */
     public static void logWarning(String message) {
         logger.log(Level.WARNING, message);
     }
 
     /**
-     * Logs an informational message.
+     * Log an informational message.
      *
-     * @param message The informational message.
+     * @param message info text
      */
     public static void logInfo(String message) {
         logger.log(Level.INFO, message);
     }
 
     /**
-     * Displays a user-friendly error message using a GUI dialog.
+     * Show a user-facing error dialog while logging technical details to the
+     * configured log file. This should be used for errors that require user
+     * attention.
      *
-     * @param userMessage The message to display to the user.
-     * @param technicalDetails Technical details for logging.
+     * @param userMessage message shown to the user
+     * @param technicalDetails technical details recorded in logs
      */
     public static void showErrorToUser(String userMessage, String technicalDetails) {
         logError(userMessage, new Exception(technicalDetails));
         javax.swing.SwingUtilities.invokeLater(() -> {
             javax.swing.JOptionPane.showMessageDialog(null, userMessage, "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
         });
+    }
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private ErrorHandler() {
+        // utility class
     }
 }

@@ -10,6 +10,13 @@ import java.nio.file.Path;
 public class FileUtils {
 
     /**
+     * Utility class — do not instantiate.
+     */
+    private FileUtils() {
+        throw new AssertionError("No instances");
+    }
+
+    /**
      * Retries a file operation multiple times in case of transient failures.
      * @param operation The file operation to execute.
      * @param maxRetries The maximum number of retries.

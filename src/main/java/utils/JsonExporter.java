@@ -8,16 +8,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Utility class for exporting data to JSON format.
+ * Helpers to export project metadata to JSON files. Produces prettified
+ * (indented) JSON by default and supports a compact output when desired.
  */
 public class JsonExporter {
 
     /**
-     * Exports a single project to a JSON file.
+     * Write a single project map to disk as a pretty-printed JSON object.
      *
-     * @param projectData A map containing project metadata.
-     * @param filePath The file path to save the JSON file.
-     * @throws IOException If an error occurs during file writing.
+     * @param projectData map with keys and values representing project fields
+     * @param filePath destination path for JSON file
+     * @throws IOException on file write failure
      */
     public static void exportProject(Map<String, Object> projectData, String filePath) throws IOException {
         JSONObject projectJson = new JSONObject(projectData);
@@ -27,11 +28,11 @@ public class JsonExporter {
     }
 
     /**
-     * Exports a list of projects to a JSON file.
+     * Export a list of projects to a pretty-printed JSON array file.
      *
-     * @param projects A list of maps, each containing project metadata.
-     * @param filePath The file path to save the JSON file.
-     * @throws IOException If an error occurs during file writing.
+     * @param projects list of project maps
+     * @param filePath destination path
+     * @throws IOException on write failure
      */
     public static void exportAllProjects(List<Map<String, Object>> projects, String filePath) throws IOException {
         JSONArray projectsJson = new JSONArray(projects);
@@ -41,16 +42,23 @@ public class JsonExporter {
     }
 
     /**
-     * Exports a list of projects to a compact JSON file.
+     * Export projects in compact (no indentation) form suitable for smaller files.
      *
-     * @param projects A list of maps, each containing project metadata.
-     * @param filePath The file path to save the JSON file.
-     * @throws IOException If an error occurs during file writing.
+     * @param projects list of project maps
+     * @param filePath destination path
+     * @throws IOException on write failure
      */
     public static void exportAllProjectsCompact(List<Map<String, Object>> projects, String filePath) throws IOException {
         JSONArray projectsJson = new JSONArray(projects);
         try (FileWriter file = new FileWriter(filePath)) {
             file.write(projectsJson.toString()); // Compact JSON
         }
+    }
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private JsonExporter() {
+        // utility class
     }
 }

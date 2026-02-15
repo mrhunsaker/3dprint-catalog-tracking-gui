@@ -6,16 +6,26 @@ import java.util.stream.Stream;
 import utils.DatabaseBackup;
 
 /**
- * Simple CLI wrapper to import a folder into the H2 database using the existing Database helper.
- * Accepts:
- *   --import-folder <path>
- *   --recipient <name>
- *   --projectType <type>
- *
- * Prints a JSON line on success: {"projectId": <id>, "name":"..."}
+ * CLI utility to import a directory of project files into the application's
+ * projects repository and persist a corresponding database record.
+ * <p>
+ * Usage:
+ * <pre>
+ *   java DatabaseImporter --import-folder /path/to/folder --recipient NAME --projectType TYPE
+ * </pre>
+ * On success the tool prints a single JSON line including the newly created
+ * project's id and name.
  */
 public class DatabaseImporter {
 
+    /**
+     * Recursively copy files from {@code src} to {@code dst}, preserving
+     * directory structure. Throws {@link IOException} on failure.
+     *
+     * @param src source path
+     * @param dst destination path
+     * @throws IOException when IO operations fail
+     */
     private static void copyRecursive(Path src, Path dst) throws IOException {
         if (!Files.exists(src)) throw new IOException("Source not found: " + src);
         try (Stream<Path> paths = Files.walk(src)) {
@@ -36,6 +46,16 @@ public class DatabaseImporter {
         }
     }
 
+    /**
+     * CLI entry point for importing a folder of project files into the application.
+     *
+     * @param args command-line arguments. Expected options:
+     *             <ul>
+     *               <li>{@code --import-folder <path>} (required)</li>
+     *               <li>{@code --recipient <name>}</li>
+     *               <li>{@code --projectType <type>}</li>
+     *             </ul>
+     */
     public static void main(String[] args) {
         String folder = null;
         String recipient = "Bulk_Import";
@@ -68,11 +88,12 @@ public class DatabaseImporter {
         Path dest = targetBase.resolve(folderName);
 
         try {
-            // Ensure backup exists before any DB write
+            // Ensure a backup exists before any DB write. Failures here are non-fatal
+            // for the importer since a separate backup strategy may be in place.
             try {
                 DatabaseBackup.createBackup(repoRoot.resolve("app_home").resolve("print_jobs.mv.db").toString());
             } catch (Exception e) {
-                // If backup helper path differs, ignore - Node script already backs up.
+                // If backup helper path differs, ignore - caller may manage backups externally.
             }
 
             if (!Files.exists(dest)) Files.createDirectories(dest);
@@ -95,5 +116,12 @@ public class DatabaseImporter {
             ioe.printStackTrace(System.err);
             System.exit(6);
         }
+    }
+    
+    /**
+     * Private constructor to prevent instantiation; this class is a CLI utility.
+     */
+    private DatabaseImporter() {
+        // utility class
     }
 }

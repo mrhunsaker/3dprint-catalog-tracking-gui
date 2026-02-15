@@ -9,15 +9,18 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * Utility class for generating various reports based on project data.
+ * Simple reporting utilities which produce JSON or CSV summaries from the
+ * in-memory project representations. These methods are stateless and useful
+ * for generating artifacts that can be embedded in the project's site.
  */
 public class ReportGenerator {
 
     /**
-     * Generates a project frequency report (most/least printed projects).
+     * Create a frequency report indicating the most- and least-printed project
+     * names from a list of project maps.
      *
-     * @param projects A list of maps, each representing a project.
-     * @return A JSON object containing the frequency report.
+     * @param projects list of project maps (each expected to have a `name` key)
+     * @return JSONObject containing `most_printed` and `least_printed` entries
      */
     public static JSONObject generateProjectFrequencyReport(List<Map<String, Object>> projects) {
         Map<String, Long> frequencyMap = projects.stream()
@@ -45,11 +48,11 @@ public class ReportGenerator {
     }
 
     /**
-     * Exports a report to a JSON file.
+     * Persist a JSON report to disk as pretty-printed JSON.
      *
-     * @param report The JSON object representing the report.
-     * @param filePath The file path to save the JSON file.
-     * @throws IOException If an error occurs during file writing.
+     * @param report JSON object to write
+     * @param filePath destination file path
+     * @throws IOException when file write fails
      */
     public static void exportReportToJson(JSONObject report, String filePath) throws IOException {
         try (FileWriter file = new FileWriter(filePath)) {
@@ -58,11 +61,12 @@ public class ReportGenerator {
     }
 
     /**
-     * Exports a report to a CSV file.
+     * Export a JSON report to a simple CSV text representation. Each top-level
+     * key/value pair becomes a CSV row in the form `key,value`.
      *
-     * @param report The JSON object representing the report.
-     * @param filePath The file path to save the CSV file.
-     * @throws IOException If an error occurs during file writing.
+     * @param report JSON object to convert to CSV
+     * @param filePath destination CSV file
+     * @throws IOException when file write fails
      */
     public static void exportReportToCsv(JSONObject report, String filePath) throws IOException {
         StringBuilder csvContent = new StringBuilder();
@@ -73,5 +77,12 @@ public class ReportGenerator {
         try (FileWriter file = new FileWriter(filePath)) {
             file.write(csvContent.toString());
         }
+    }
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private ReportGenerator() {
+        // utility class
     }
 }

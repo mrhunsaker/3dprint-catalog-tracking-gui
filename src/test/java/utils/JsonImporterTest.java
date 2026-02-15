@@ -15,10 +15,17 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class JsonImporterTest {
 
+    /** Public no-arg constructor required by the test framework. */
+    public JsonImporterTest() {
+    }
+
+    /** Test JSON filename used by the fixture. */
     private static final String TEST_JSON_FILE = "test_projects.json";
 
+    /** Prepare a small sample JSON file used by tests. */
     @BeforeEach
     public void setUp() throws IOException {
+        // Create a small sample JSON file used by multiple tests
         // Create a sample JSON file for testing
         String sampleJson = """
         [
@@ -46,8 +53,10 @@ public class JsonImporterTest {
         }
     }
 
+    /** Verify importing projects from a well-formed sample JSON file. */
     @Test
     public void testImportProjects() throws IOException {
+        // Ensure importing returns the expected project structures
         List<Map<String, Object>> projects = JsonImporter.importProjects(TEST_JSON_FILE);
 
         assertEquals(2, projects.size());
@@ -69,13 +78,17 @@ public class JsonImporterTest {
         assertEquals("2025-09-02", projectB.get("created_date"));
     }
 
+    /** Ensure structure validation accepts a valid JSON file path. */
     @Test
     public void testValidateJsonStructure_ValidFile() {
+        // Validate that a well-formed JSON file passes structural checks
         assertTrue(JsonImporter.validateJsonStructure(TEST_JSON_FILE));
     }
 
+    /** Ensure structure validation rejects an invalid JSON file. */
     @Test
     public void testValidateJsonStructure_InvalidFile() throws IOException {
+        // Validate that invalid JSON is correctly reported as invalid
         String invalidJson = "{ invalid json }";
         String invalidFile = "invalid_projects.json";
 

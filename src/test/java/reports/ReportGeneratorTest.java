@@ -17,8 +17,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class ReportGeneratorTest {
 
+    /** Public no-arg constructor required by the test framework. */
+    public ReportGeneratorTest() {
+    }
+
+    /** Verify frequency report identifies most/least printed projects. */
     @Test
     public void testGenerateProjectFrequencyReport() {
+    // Verify the frequency report identifies most/least printed projects
         // Sample project data
         List<Map<String, Object>> projects = List.of(
             Map.of("name", "Project A"),
@@ -35,8 +41,10 @@ public class ReportGeneratorTest {
         assertEquals(1, report.getJSONObject("least_printed").get("value"));
     }
 
+    /** Ensure export to JSON creates a file with expected content. */
     @Test
     public void testExportReportToJson() throws IOException {
+        // Ensure export to JSON creates a file with expected content
         JSONObject report = new JSONObject();
         report.put("key", "value");
 
@@ -57,8 +65,10 @@ public class ReportGeneratorTest {
         file.delete();
     }
 
+    /** Ensure export to CSV writes expected key/value pairs. */
     @Test
     public void testExportReportToCsv() throws IOException {
+        // Ensure export to CSV writes expected key/value pairs
         JSONObject report = new JSONObject();
         report.put("key1", "value1");
         report.put("key2", "value2");

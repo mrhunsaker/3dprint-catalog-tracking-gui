@@ -7,17 +7,33 @@ import java.util.Date;
 import javax.swing.JOptionPane;
 
 /**
- * Utility class for database backup and recovery.
+ * Utilities for creating, restoring and validating simple file-based backups
+ * of the H2 database used by the application.
+ *
+ * These methods perform straightforward file copy operations and basic
+ * verification based on file existence and size. They are intended for small
+ * desktop deployments and are not a replacement for enterprise backup tools.
+ *
+ * @since 1.0.0
  */
 public class DatabaseBackup {
 
+    /** Directory where timestamped backups are stored. */
     private static final String BACKUP_DIR = "app_home/backups/";
 
     /**
-     * Creates a backup of the database.
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private DatabaseBackup() {
+        // utility class
+    }
+
+    /**
+     * Create a timestamped copy of the database file under the backups folder.
+     * A simple GUI confirmation is shown on success.
      *
-     * @param dbFilePath Path to the database file.
-     * @throws IOException If an I/O error occurs.
+     * @param dbFilePath path to the live database file
+     * @throws IOException when file operations fail
      */
     public static void createBackup(String dbFilePath) throws IOException {
         File backupDir = new File(BACKUP_DIR);
@@ -35,11 +51,11 @@ public class DatabaseBackup {
     }
 
     /**
-     * Restores the database from a backup file.
+     * Restore a backup file to the live database location by copying the file.
      *
-     * @param backupFilePath Path to the backup file.
-     * @param dbFilePath Path to the database file to restore.
-     * @throws IOException If an I/O error occurs.
+     * @param backupFilePath path to the archived backup file
+     * @param dbFilePath destination path for the live database file
+     * @throws IOException when file operations fail
      */
     public static void restoreBackup(String backupFilePath, String dbFilePath) throws IOException {
         Path source = Paths.get(backupFilePath);
@@ -49,10 +65,11 @@ public class DatabaseBackup {
     }
 
     /**
-     * Verifies the integrity of a backup file.
+     * Basic existence check for a backup file. Returns true when file exists and
+     * has non-zero length.
      *
-     * @param backupFilePath Path to the backup file.
-     * @return True if the file is valid, false otherwise.
+     * @param backupFilePath path to backup file
+     * @return true if file exists and is non-empty
      */
     public static boolean verifyBackup(String backupFilePath) {
         File file = new File(backupFilePath);
@@ -60,31 +77,29 @@ public class DatabaseBackup {
     }
 
     /**
-     * Verifies the integrity of a backup file by attempting to restore it to a temporary location.
-     * @param backupFilePath Path to the backup file.
-     * @return True if the backup is valid, false otherwise.
+     * More thorough verification that attempts to copy the backup to a temporary
+     * location and checks that the temporary file is usable (non-zero size).
+     *
+     * @param backupFilePath path to the backup file
+     * @return true when the backup appears valid
      */
     public static boolean verifyBackupIntegrity(String backupFilePath) {
         Path tempDir = Paths.get(BACKUP_DIR, "temp_restore");
         try {
-            // Create a temporary directory for testing the restore
             if (!Files.exists(tempDir)) {
                 Files.createDirectories(tempDir);
             }
 
             Path tempDbFile = tempDir.resolve("test_restore.mv.db");
 
-            // Attempt to restore the backup to the temporary file
             Files.copy(Paths.get(backupFilePath), tempDbFile, StandardCopyOption.REPLACE_EXISTING);
 
-            // Check if the restored file is valid (basic check: file size > 0)
             if (Files.size(tempDbFile) > 0) {
                 return true;
             }
         } catch (IOException e) {
             System.err.println("Backup verification failed: " + e.getMessage());
         } finally {
-            // Clean up the temporary directory
             try {
                 Files.deleteIfExists(tempDir.resolve("test_restore.mv.db"));
                 Files.deleteIfExists(tempDir);

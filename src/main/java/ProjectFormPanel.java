@@ -25,27 +25,61 @@ import utils.ErrorHandler;
 public class ProjectFormPanel extends JPanel {
 
     // Form fields and controls
-    private JTextField projectNameField; // Project name input
-    private JComboBox<String> projectTypeComboBox; // Project type dropdown
-    private JFormattedTextField lastPrintedDateField; // Date input
-    private JTextArea projectNotesArea; // Notes input
-    private JButton addDateButton; // Add date to list
-    private JButton datePickerButton; // Open date picker
-    private JButton removeDateButton; // Remove selected date from list
-    private JTextField projectPathField; // Selected folder path
-    private JButton browseButton; // Browse for folder
-    private JButton addProjectButton; // Submit project
-    private JButton searchProjectsButton; // Open search dialog
-    private File selectedFolder; // Chosen folder
-    private DefaultListModel<String> dateListModel; // List model for dates
-    private JList<String> lastPrintedDatesList; // List UI for dates
+    /** Project name input field. */
+    private JTextField projectNameField;
+
+    /** Project type dropdown. */
+    private JComboBox<String> projectTypeComboBox;
+
+    /** Date input field for last printed date (format yyyy-MM-dd). */
+    private JFormattedTextField lastPrintedDateField;
+
+    /** Notes input area for additional project information. */
+    private JTextArea projectNotesArea;
+
+    /** Button to add the entered date to the list of last printed dates. */
+    private JButton addDateButton;
+
+    /** Button to open a date picker dialog. */
+    private JButton datePickerButton;
+
+    /** Button to remove the selected date from the date list. */
+    private JButton removeDateButton;
+
+    /** Read-only field showing the selected project folder path. */
+    private JTextField projectPathField;
+
+    /** Button to open a folder chooser for selecting the project folder. */
+    private JButton browseButton;
+
+    /** Button to submit a new project to the database. */
+    private JButton addProjectButton;
+
+    /** Button to open the search dialog for projects. */
+    private JButton searchProjectsButton;
+
+    /** Currently selected project folder on disk (may be null). */
+    private File selectedFolder;
+
+    /** List model holding last-printed date strings. */
+    private DefaultListModel<String> dateListModel;
+
+    /** UI list showing last-printed dates. */
+    private JList<String> lastPrintedDatesList;
 
     // Add Project Recipient field
-    private JTextField projectRecipientField; // Project recipient input
+    /** Input field for the project recipient. */
+    private JTextField projectRecipientField;
+
     // Modify Project Tags to allow multi-selection
-    private JList<String> projectTagsList; // Multi-selection list for tags
-    private JButton loadProjectButton; // Load project data into form
-    private JButton updateProjectButton; // Update project details
+    /** Multi-selection list of project tags/categories. */
+    private JList<String> projectTagsList;
+
+    /** Button to load an existing project into the form. */
+    private JButton loadProjectButton;
+
+    /** Button to update an existing project's details. */
+    private JButton updateProjectButton;
 
     /**
      * Constructs the project form panel and lays out all fields and buttons.
@@ -57,20 +91,20 @@ public class ProjectFormPanel extends JPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        Font font18 = new Font("SansSerif", Font.PLAIN, 18);
+        Font font28 = new Font("SansSerif", Font.PLAIN, 28);
 
         int row = 0;
         // Project Name
         gbc.gridx = 0;
         gbc.gridy = row;
         JLabel nameLabel = new JLabel("Project Name:");
-        nameLabel.setFont(font18);
+        nameLabel.setFont(font28);
         nameLabel.getAccessibleContext().setAccessibleDescription("Label for project name input field");
         add(nameLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
         projectNameField = new JTextField(20);
-        projectNameField.setFont(font18);
+        projectNameField.setFont(font28);
         projectNameField.setToolTipText("Enter the name of the project.");
         projectNameField.getAccessibleContext().setAccessibleName("Project Name Input");
         projectNameField.getAccessibleContext().setAccessibleDescription("Input field for entering the project name.");
@@ -82,14 +116,14 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         JLabel typeLabel = new JLabel("Project Type:");
-        typeLabel.setFont(font18);
+        typeLabel.setFont(font28);
         typeLabel.getAccessibleContext().setAccessibleDescription("Label for project type dropdown");
         add(typeLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
         String[] projectTypes = {"Prototype", "Final Print"};
         projectTypeComboBox = new JComboBox<>(projectTypes);
-        projectTypeComboBox.setFont(font18);
+        projectTypeComboBox.setFont(font28);
         projectTypeComboBox.setToolTipText("Select the type of project.");
         projectTypeComboBox.getAccessibleContext().setAccessibleName("Project Type Dropdown");
         projectTypeComboBox.getAccessibleContext().setAccessibleDescription("Dropdown for selecting the project type.");
@@ -101,12 +135,12 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         JLabel recipientLabel = new JLabel("Project Recipient:");
-        recipientLabel.setFont(font18);
+        recipientLabel.setFont(font28);
         add(recipientLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
         projectRecipientField = new JTextField(20);
-        projectRecipientField.setFont(font18);
+        projectRecipientField.setFont(font28);
         projectRecipientField.setToolTipText("Enter the recipient of the project.");
         add(projectRecipientField, gbc);
         gbc.gridwidth = 1;
@@ -116,14 +150,14 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         JLabel tagsLabel = new JLabel("Project Tags:");
-        tagsLabel.setFont(font18);
+        tagsLabel.setFont(font28);
         tagsLabel.getAccessibleContext().setAccessibleDescription("Label for project tags dropdown");
         add(tagsLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
         String[] projectTags = {"ECC", "O&M", "Math", "Biology", "Chemistry", "ELA", "Braille", "Communication"};
         projectTagsList = new JList<>(projectTags);
-        projectTagsList.setFont(font18);
+        projectTagsList.setFont(font28);
         projectTagsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         add(new JScrollPane(projectTagsList), gbc);
         gbc.gridwidth = 1;
@@ -133,13 +167,13 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         JLabel notesLabel = new JLabel("Project Notes:");
-        notesLabel.setFont(font18);
+        notesLabel.setFont(font28);
         notesLabel.getAccessibleContext().setAccessibleDescription("Label for project notes input area");
         add(notesLabel, gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
         projectNotesArea = new JTextArea(5, 20);
-        projectNotesArea.setFont(font18);
+        projectNotesArea.setFont(font28);
         projectNotesArea.setToolTipText("Enter notes or additional information about the project.");
         projectNotesArea.getAccessibleContext().setAccessibleName("Project Notes Input");
         projectNotesArea.getAccessibleContext().setAccessibleDescription("Input area for entering notes or additional information about the project.");
@@ -151,21 +185,21 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         JLabel dateLabel = new JLabel("Last Printed Date:");
-        dateLabel.setFont(font18);
+        dateLabel.setFont(font28);
         add(dateLabel, gbc);
         gbc.gridx = 1;
         lastPrintedDateField = new JFormattedTextField(new SimpleDateFormat("yyyy-MM-dd"));
         lastPrintedDateField.setValue(new Date());
-        lastPrintedDateField.setFont(font18);
+        lastPrintedDateField.setFont(font28);
         add(lastPrintedDateField, gbc);
         gbc.gridx = 2;
         
         // Panel for date buttons
         JPanel dateButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         addDateButton = new JButton("Add Date");
-        addDateButton.setFont(font18);
+        addDateButton.setFont(font28);
         datePickerButton = new JButton("📅");
-        datePickerButton.setFont(font18);
+        datePickerButton.setFont(font28);
         datePickerButton.setToolTipText("Open Date Picker");
         dateButtonPanel.add(addDateButton);
         dateButtonPanel.add(datePickerButton);
@@ -178,7 +212,7 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridwidth = 2;
         dateListModel = new DefaultListModel<>();
         lastPrintedDatesList = new JList<>(dateListModel);
-        lastPrintedDatesList.setFont(font18);
+        lastPrintedDatesList.setFont(font28);
         lastPrintedDatesList.setPreferredSize(new Dimension(200, 80));
         JScrollPane dateScrollPane = new JScrollPane(lastPrintedDatesList);
         add(dateScrollPane, gbc);
@@ -189,7 +223,7 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridy = row;
         removeDateButton = new JButton("Remove Selected Date");
-        removeDateButton.setFont(font18);
+        removeDateButton.setFont(font28);
         add(removeDateButton, gbc);
         row++;
 
@@ -197,16 +231,16 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = row;
         JLabel folderLabel = new JLabel("Project Folder:");
-        folderLabel.setFont(font18);
+        folderLabel.setFont(font28);
         add(folderLabel, gbc);
         gbc.gridx = 1;
         projectPathField = new JTextField(20);
         projectPathField.setEditable(false);
-        projectPathField.setFont(font18);
+        projectPathField.setFont(font28);
         add(projectPathField, gbc);
         gbc.gridx = 2;
         browseButton = new JButton("Browse");
-        browseButton.setFont(font18);
+        browseButton.setFont(font28);
         add(browseButton, gbc);
         row++;
 
@@ -214,7 +248,7 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridy = row;
         addProjectButton = new JButton("Add Project");
-        addProjectButton.setFont(font18);
+        addProjectButton.setFont(font28);
         addProjectButton.setToolTipText("Add the project to the database.");
         addProjectButton.getAccessibleContext().setAccessibleName("Add Project Button");
         addProjectButton.getAccessibleContext().setAccessibleDescription("Button to add the project to the database.");
@@ -225,14 +259,14 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridy = row;
         searchProjectsButton = new JButton("Search Projects");
-        searchProjectsButton.setFont(font18);
+        searchProjectsButton.setFont(font28);
         add(searchProjectsButton, gbc);
 
         // Add Load Project Button
         gbc.gridx = 1;
         gbc.gridy = row;
         loadProjectButton = new JButton("Load Project");
-        loadProjectButton.setFont(font18);
+        loadProjectButton.setFont(font28);
         loadProjectButton.setToolTipText("Load project data into the form.");
         add(loadProjectButton, gbc);
         row++;
@@ -241,7 +275,7 @@ public class ProjectFormPanel extends JPanel {
         gbc.gridx = 1;
         gbc.gridy = row;
         updateProjectButton = new JButton("Update Project");
-        updateProjectButton.setFont(font18);
+        updateProjectButton.setFont(font28);
         updateProjectButton.setToolTipText("Update the project details in the database.");
         add(updateProjectButton, gbc);
         row++;
@@ -323,7 +357,7 @@ public class ProjectFormPanel extends JPanel {
         JSpinner dateSpinner = new JSpinner(new SpinnerDateModel());
         JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd");
         dateSpinner.setEditor(dateEditor);
-        dateSpinner.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        dateSpinner.setFont(new Font("SansSerif", Font.PLAIN, 28));
         
         // Set current value to today
         dateSpinner.setValue(new Date());
@@ -570,7 +604,11 @@ public class ProjectFormPanel extends JPanel {
         // Example: Implement logic to filter projects based on the query
     }
 
-    // Method to load project data into the form
+    /**
+     * Prompt for a project ID and load its data into the form fields.
+     *
+     * @param e the ActionEvent that triggered loading a project
+     */
     private void loadProjectData(ActionEvent e) {
         String projectIdStr = JOptionPane.showInputDialog(this, "Enter Project ID to Load:", "Load Project", JOptionPane.QUESTION_MESSAGE);
         if (projectIdStr != null && !projectIdStr.trim().isEmpty()) {
@@ -608,7 +646,12 @@ public class ProjectFormPanel extends JPanel {
         }
     }
 
-    // Method to update project data in the database
+    /**
+     * Prompt for a project ID and update the project's details in the database
+     * using the values currently set in the form.
+     *
+     * @param e the ActionEvent that triggered the update
+     */
     private void updateProjectData(ActionEvent e) {
         String projectName = projectNameField.getText().trim();
         String projectType = (String) projectTypeComboBox.getSelectedItem();

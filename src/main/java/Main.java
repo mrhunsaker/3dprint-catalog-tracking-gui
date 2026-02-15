@@ -26,8 +26,15 @@ import javax.swing.AbstractButton;
 
 /**
  * Main application window for the 3D Print Job Tracker GUI.
- * Handles initialization, menu bar, theme selection, and main content panel.
- * Extend this class to add more features or dialogs.
+ * <p>
+ * This JFrame implementation is responsible for application startup tasks such
+ * as database initialization, integrity checks, scheduling backups and
+ * composing the primary UI (menu, main panel). The class is implemented as a
+ * singleton and is safe to obtain from other UI components via
+ * {@link #getInstance()}.
+ * </p>
+ *
+ * @since 1.0.0
  */
 public class Main extends JFrame {
     /**
@@ -58,10 +65,17 @@ public class Main extends JFrame {
         INTELLIJ_THEMES.put("Vuesion", FlatVuesionIJTheme.class);
     }
 
+    /** Main project form panel displayed in the center of the window. */
     private ProjectFormPanel projectForm;
 
+    /** Singleton instance of the main application window. */
     private static Main instance;
 
+    /**
+     * Return the singleton `Main` instance, creating it if necessary.
+     *
+     * @return the singleton `Main` instance
+     */
     public static synchronized Main getInstance() {
         if (instance == null) {
             instance = new Main();
@@ -160,6 +174,9 @@ public class Main extends JFrame {
     /**
      * Initializes the database tables if they do not exist.
      * Shows an error dialog if initialization fails.
+        *
+        * This method creates the minimal schema used by the application. It is
+        * safe to call multiple times as the DDL uses "IF NOT EXISTS" checks.
      */
     private void initializeDatabase() {
         try (Connection conn = Database.connect()) {
@@ -195,6 +212,8 @@ public class Main extends JFrame {
 
     /**
      * Verifies the integrity of the database and schedules automatic backups.
+        *
+        * If verification fails the application will exit with an error dialog.
      */
     private void verifyDatabaseAndScheduleBackups() {
         try {
@@ -227,10 +246,12 @@ public class Main extends JFrame {
     /**
      * Creates the menu bar with File, Project, and Theme menus.
      * Theme menu allows user to select color scheme.
+        *
+        * Each menu item is wired to an action method defined on this class.
      */
     private void createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
-        Font menuFont = new Font("SansSerif", Font.PLAIN, 18);
+        Font menuFont = new Font("SansSerif", Font.PLAIN, 28);
 
         // File menu
         JMenu fileMenu = new JMenu("File");
@@ -305,6 +326,11 @@ public class Main extends JFrame {
         setJMenuBar(menuBar);
     }
 
+    /**
+     * Shows a brief list of keyboard shortcuts in an information dialog.
+     *
+     * @param e the ActionEvent that triggered displaying shortcuts
+     */
     private void showShortcutsDialog(ActionEvent e) {
         String shortcuts = "Keyboard Shortcuts:\n" +
             "Ctrl+B: Backup Database\n" +
@@ -332,7 +358,7 @@ public class Main extends JFrame {
             "3D Print Job Tracker",
             SwingConstants.CENTER
         );
-        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 32));
         welcomeLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
         add(welcomeLabel, BorderLayout.NORTH);
 
@@ -343,6 +369,8 @@ public class Main extends JFrame {
 
     /**
      * Opens the SearchDialog for searching projects.
+     *
+     * @param e the ActionEvent that triggered opening the dialog
      */
     private void openSearchDialog(ActionEvent e) {
         SearchDialog searchDialog = new SearchDialog(this);
@@ -363,11 +391,16 @@ public class Main extends JFrame {
         backupTimer.start();
     }
 
-    /**
-     * Main entry point. Sets system look and feel and launches the application.
-     * Ensures GUI is created on the Event Dispatch Thread.
-     */
-    public static void main(String[] args) {
+     /**
+      * Main entry point. Sets system look and feel and launches the application.
+      * Ensures GUI is created on the Event Dispatch Thread.
+      *
+      * Supported command-line behavior: the application attempts to load a saved
+      * theme from `app_settings.properties` and falls back to a light theme.
+      *
+      * @param args command-line arguments (ignored by the GUI)
+      */
+     public static void main(String[] args) {
         // Load saved theme from settings
         Properties settings = new Properties();
         String theme = "Light"; // Default theme
@@ -398,6 +431,11 @@ public class Main extends JFrame {
         });
     }
 
+    /**
+     * Create a backup of the H2 database file.
+     *
+     * @param e the ActionEvent that triggered the backup
+     */
     private void performBackup(ActionEvent e) {
         try {
             String dbFilePath = "app_home/print_jobs.mv.db";
@@ -413,6 +451,10 @@ public class Main extends JFrame {
         }
     }
 
+    /**
+     * Perform a scheduled backup of the H2 database file.
+     * This is intended to be invoked by a timer task.
+     */
     private void performScheduledBackup() {
         try {
             String dbFilePath = "app_home/print_jobs.mv.db";
@@ -423,14 +465,30 @@ public class Main extends JFrame {
         }
     }
 
+    /**
+     * Restore the database from a backup. Implementation may show a file chooser
+     * and perform the restore operation.
+     *
+     * @param e the ActionEvent that triggered the restore
+     */
     private void performRestore(ActionEvent e) {
         // Placeholder for restore logic
     }
 
+    /**
+     * Exit the application immediately.
+     *
+     * @param e the ActionEvent that triggered exiting the application
+     */
     private void exitApplication(ActionEvent e) {
         System.exit(0);
     }
 
+    /**
+     * Apply the selected theme and persist the choice to settings.
+     *
+     * @param e the ActionEvent from the theme menu selection
+     */
     private void toggleTheme(ActionEvent e) {
         String selectedTheme = null;
         JMenu themeMenu = (JMenu) getJMenuBar().getMenu(2); // Assuming Theme menu is the third menu
@@ -468,6 +526,11 @@ public class Main extends JFrame {
         }
     }
 
+    /**
+     * Display a brief user guide in a dialog.
+     *
+     * @param e the ActionEvent that triggered showing the user guide
+     */
     private void showUserGuide(ActionEvent e) {
         String userGuide = "User Guide:\n\n" +
             "- Main Window:\n" +
@@ -496,12 +559,17 @@ public class Main extends JFrame {
         );
     }
 
+    /**
+     * Show the About dialog containing version and author information.
+     *
+     * @param e the ActionEvent that triggered showing the About dialog
+     */
     private void showAboutDialog(ActionEvent e) {
         String aboutText = "3D Print Job Tracker\n" +
-            "Version: 2025-08-beta\n" +
+            "Version: 1.0.0\n" +
             "Developed by: Michael Ryan Hunsaker, M.Ed., Ph.D.\n" +
             "hunsakerconsulting@gmail.com\n" +
-            "Copyright © 2025\n" +
+            "Copyright © 2026\n" +
             "Description: A GUI application for managing 3D print jobs, including project tracking, database backups, and theme customization.";
 
         JOptionPane.showMessageDialog(
@@ -512,8 +580,12 @@ public class Main extends JFrame {
         );
     }
 
+    /**
+     * Ensure a consistent large font is applied across common UI components.
+     * This is invoked on startup to improve readability on high-DPI displays.
+     */
     private void ensureConsistentFontSize() {
-        Font universalFont = new Font("SansSerif", Font.PLAIN, 18);
+        Font universalFont = new Font("SansSerif", Font.PLAIN, 36);
         UIManager.put("Label.font", universalFont);
         UIManager.put("Button.font", universalFont);
         UIManager.put("Menu.font", universalFont);

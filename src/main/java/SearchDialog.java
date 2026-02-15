@@ -13,20 +13,38 @@ import javax.swing.table.DefaultTableModel;
 import utils.ErrorHandler;
 
 /**
- * Dialog for searching and displaying 3D print projects from the database.
- * Provides a search field, results table, and close button.
- * Double-click on table rows to open project folders in file explorer.
- * Extend this class to add more search filters or result actions.
+ * Modal dialog used to search and browse existing projects stored in the
+ * application's database.
+ * <p>
+ * The dialog provides a text search field that matches project name and
+ * description, displays results in a read-only table and allows opening the
+ * associated project folder or loading project details into the main form.
+ * </p>
+ *
+ * @since 1.0.0
  */
 public class SearchDialog extends JDialog {
     // UI components
-    private JTextField searchField; // Search input field
-    private JButton searchButton; // Button to trigger search
-    private JButton closeButton; // Button to close dialog
-    private JButton loadProjectButton; // Button to load selected project
-    private JButton openFolderButton; // Button to open project folder
-    private JTable resultsTable; // Table to show results
-    private DefaultTableModel tableModel; // Table model for results
+    /** Search input field. */
+    private JTextField searchField;
+
+    /** Button to trigger a search. */
+    private JButton searchButton;
+
+    /** Button to close the dialog. */
+    private JButton closeButton;
+
+    /** Button to load the selected project into the main form. */
+    private JButton loadProjectButton;
+
+    /** Button to open the selected project's folder in the system file explorer. */
+    private JButton openFolderButton;
+
+    /** Table displaying search results. */
+    private JTable resultsTable;
+
+    /** Table model backing the results table. */
+    private DefaultTableModel tableModel;
 
     /**
      * Constructs the search dialog and initializes all UI components.
@@ -302,10 +320,8 @@ public class SearchDialog extends JDialog {
 
     /**
      * Loads the details of the selected project into the main form.
-     * @param projectName The name of the project
-     * @param projectType The type of the project
-     * @param description The description of the project
-     * @param filePath The file path of the project
+     * The selected row's project values (name, type, description and file path)
+     * are read from the table model and passed to the main frame.
      */
     private void loadSelectedProject() {
         int selectedRow = resultsTable.getSelectedRow();

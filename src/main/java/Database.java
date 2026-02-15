@@ -9,9 +9,37 @@ import java.nio.file.Paths;
 import utils.DatabaseBackup;
 
 /**
- * Utility class for database operations related to 3D print projects.
- * Provides methods for connecting, inserting projects, and adding print dates.
- * Extend this class to add more queries or update logic as needed.
+ * Database helper utilities used by the application for H2 persistence.
+ *
+ * <p>
+ * This class centralizes connection handling, simple CRUD helpers and
+ * transaction execution helpers. It is intentionally minimal and
+ * synchronous to match the small desktop application's usage pattern.
+ * </p>
+ *
+ * <h2>H2 database details</h2>
+ * <ul>
+ *   <li>JDBC URL: <code>jdbc:h2:./app_home/print_jobs</code> — relative to the
+ *       repository root; the actual data file is <code>app_home/print_jobs.mv.db</code>.</li>
+ *   <li>Default credentials: user <code>sa</code> with an empty password (used
+ *       intentionally for local desktop deployments; secure or change in
+ *       production).</li>
+ *   <li>Backups: The project includes {@link utils.DatabaseBackup} which copies
+ *       the MV store file into <code>app_home/backups/</code>. Prefer creating
+ *       a backup before performing operations that modify the database.</li>
+ *   <li>Recovery: Use {@link utils.DatabaseBackup#restoreBackup(String,String)}
+ *       to restore an archived file into <code>app_home/print_jobs.mv.db</code>.
+ *       Also see {@link #recoverDatabase()} which attempts to restore the most
+ *       recent backup found in the backups folder.</li>
+ *   <li>Concurrency: This application uses embedded H2 file mode. Avoid opening
+ *       the same database file from multiple JVMs concurrently — prefer the
+ *       single-process desktop usage pattern. When necessary, configure a
+ *       networked H2 server or use a separate DB server.</li>
+ *   <li>Lock timeout: {@link #connectWithTimeout()} sets a 5s lock timeout to
+ *       reduce UI hangs when a lock is held by another process.</li>
+ * </ul>
+ *
+ * @since 1.0.0
  */
 public class Database {
 
@@ -19,39 +47,42 @@ public class Database {
     private static final String URL = "jdbc:h2:./app_home/print_jobs";
 
     /**
-     * Connects to the H2 database using default credentials.
-     * @return Connection object
-     * @throws SQLException if connection fails
+     * Open a JDBC connection using the configured URL and default credentials.
+     *
+     * @return a new {@link Connection}
+     * @throws SQLException if a connection cannot be established
      */
     public static Connection connect() throws SQLException {
         return DriverManager.getConnection(URL, "sa", "");
     }
 
     /**
-     * Connects to the H2 database with lock handling and timeout management.
+     * Open a JDBC connection and configure a shorter lock timeout to reduce UI hangs
+     * when another process holds database locks.
      *
-     * @return Connection object
-     * @throws SQLException if connection fails
+     * @return a configured {@link Connection}
+     * @throws SQLException if a connection cannot be established
      */
     public static Connection connectWithTimeout() throws SQLException {
         Connection conn = DriverManager.getConnection(URL, "sa", "");
-        conn.createStatement().execute("SET LOCK_TIMEOUT 5000"); // Set lock timeout to 5 seconds
+        conn.createStatement().execute("SET LOCK_TIMEOUT 5000"); // 5 seconds
         return conn;
     }
 
     /**
-     * Inserts a new project into the database and returns its generated ID.
-     * @param name        The project name.
-     * @param projectType The project type.
-     * @param filePath    The absolute path to the project files.
-     * @param description The project description.
-     * @return The ID of the newly inserted project.
-     * @throws SQLException if a database access error occurs.
+     * Insert a new project record and return the generated primary key.
      *
-     * Example usage:
-     * <pre>
-     *     int id = Database.insertProject("Test", "Model", "/path", "desc");
-     * </pre>
+     * @param name the project name
+     * @param projectType the project type string
+     * @param filePath absolute filesystem path to project files
+     * @param description free-text description
+     * @return generated id for the new project
+     * @throws SQLException if insertion fails
+     *
+    * Example:
+    * <pre>
+    * int id = Database.insertProject("Box", "Prototype", "/tmp/box", "Student project");
+    * </pre>
      */
     public static int insertProject(
         String name,
@@ -85,16 +116,13 @@ public class Database {
     }
 
     /**
-     * Adds a list of last printed dates for a given project.
-     * Each date string should be in yyyy-MM-dd format.
-     * @param projectId The ID of the project.
-     * @param dates     A list of date strings to add.
-     * @throws SQLException if a database access error occurs.
+     * Add a collection of last-printed dates for a project in a single transaction.
+     * Dates must be provided as strings parsable to a timestamp using the
+     * pattern yyyy-MM-dd (time portion is set to midnight).
      *
-     * Example usage:
-     * <pre>
-     *     Database.addLastPrintedDates(1, Arrays.asList("2025-09-01"));
-     * </pre>
+     * @param projectId the project primary key
+     * @param dates list of date strings in yyyy-MM-dd format
+     * @throws SQLException on DB errors
      */
     public static void addLastPrintedDates(int projectId, List<String> dates) throws SQLException {
         final String sql = "INSERT INTO last_printed_dates(project_id, print_date) VALUES(?, ?)";
@@ -115,11 +143,12 @@ public class Database {
     }
 
     /**
-     * Executes a set of database operations within a transaction.
-     * Rolls back the transaction if any operation fails.
+     * Execute code inside a transaction. The {@code operations} lambda receives
+     * a {@link Connection} which it must use for all statements to ensure they
+     * participate in the same transaction.
      *
-     * @param operations A lambda containing the database operations to execute.
-     * @throws SQLException if a database access error occurs.
+     * @param operations lambda executed within a transaction
+     * @throws SQLException if the execution or commit fails
      */
     public static void executeTransaction(DatabaseOperation operations) throws SQLException {
         try (Connection conn = connectWithTimeout()) {
@@ -137,10 +166,11 @@ public class Database {
     }
 
     /**
-     * Rolls back a transaction if any operation fails.
-     * This method ensures that the database remains in a consistent state.
-     * @param operations A lambda containing the database operations to execute.
-     * @throws SQLException if a database access error occurs.
+     * Similar to {@link #executeTransaction(DatabaseOperation)} but logs the error
+     * before rethrowing so callers may avoid duplicating logging logic.
+     *
+     * @param operations transactional operations
+     * @throws SQLException on failure
      */
     public static void executeTransactionWithRollback(DatabaseOperation operations) throws SQLException {
         try (Connection conn = connectWithTimeout()) {
@@ -159,24 +189,45 @@ public class Database {
     }
 
     /**
-     * Functional interface for database operations within a transaction.
+     * Functional interface used by transaction helpers.
      */
     @FunctionalInterface
     public interface DatabaseOperation {
+        /**
+         * Execute database operations using the provided connection. Implementations
+         * must use the supplied {@code conn} for all statements so they participate
+         * in the surrounding transaction.
+         *
+         * @param conn active JDBC connection
+         * @throws SQLException when a database error occurs
+         */
         void execute(Connection conn) throws SQLException;
     }
 
     /**
-     * Functional interface for executing code within a transaction.
+     * Backwards-compatible alias used in some places in the codebase.
      */
     @FunctionalInterface
     public interface TransactionCode {
+        /**
+         * Execute transactional code using the provided connection.
+         *
+         * @param conn active JDBC connection
+         * @throws SQLException on database errors
+         */
         void execute(Connection conn) throws SQLException;
     }
 
     /**
-     * Verifies the integrity of the database by checking for required tables.
-     * Logs errors if any required tables are missing.
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private Database() {
+        // utility class
+    }
+
+    /**
+     * Basic integrity check ensuring required tables exist. Any missing table
+     * will be logged via {@link utils.ErrorHandler}.
      */
     public static void verifyDatabaseIntegrity() {
         try (Connection conn = connectWithTimeout()) {
@@ -196,10 +247,9 @@ public class Database {
     }
 
     /**
-     * Checks if the database is corrupted by attempting a simple query.
-     * Logs an error and returns true if corruption is detected.
+     * Quick corruption test: attempt a simple query and report failure.
      *
-     * @return True if the database is corrupted, false otherwise.
+     * @return true when corruption is detected, false otherwise
      */
     public static boolean isDatabaseCorrupted() {
         try (Connection conn = connectWithTimeout()) {
@@ -214,8 +264,8 @@ public class Database {
     }
 
     /**
-     * Recovers the database from the most recent backup.
-     * Finds the latest backup file and restores the database from it.
+     * Recover from the most recent backup found in `app_home/backups/`.
+     * This method attempts to locate, verify and restore the latest backup file.
      */
     public static void recoverDatabase() {
         try {
@@ -238,8 +288,8 @@ public class Database {
     }
 
     /**
-     * Updates the database schema to include new columns and tables.
-     * Adds recipient column, modifies tags, and ensures project_type is updatable.
+     * Apply simple schema updates to ensure optional columns exist.
+     * This is idempotent and safe to call at startup.
      */
     public static void updateSchema() {
         try (Connection conn = connectWithTimeout()) {
@@ -259,10 +309,13 @@ public class Database {
     }
 
     /**
-     * Loads project data by ID.
-     * @param projectId The ID of the project to load.
-     * @return A ResultSet containing the project data.
-     * @throws SQLException if a database access error occurs.
+     * Load project record by id. The returned ResultSet is connected to an open
+     * {@link Connection} which the caller is responsible for closing. Callers
+     * should ensure they close both the ResultSet and the underlying connection.
+     *
+     * @param projectId project primary key
+     * @return ResultSet positioned before first row
+     * @throws SQLException on failure
      */
     public static ResultSet loadProjectById(int projectId) throws SQLException {
         final String sql = "SELECT * FROM projects WHERE id = ?";
@@ -273,14 +326,15 @@ public class Database {
     }
 
     /**
-     * Updates project details in the database.
-     * @param projectId   The ID of the project to update.
-     * @param name        The updated project name.
-     * @param projectType The updated project type.
-     * @param recipient   The updated recipient name.
-     * @param tags        The updated tags (as a delimited string).
-     * @param description The updated project description.
-     * @throws SQLException if a database access error occurs.
+     * Update a project's metadata in the database.
+     *
+     * @param projectId id of the project to update
+     * @param name updated project name
+     * @param projectType updated type
+     * @param recipient updated recipient
+     * @param tags comma-separated tags string
+     * @param description updated description
+     * @throws SQLException on failure
      */
     public static void updateProject(
         int projectId,

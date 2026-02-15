@@ -126,6 +126,13 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <!-- Include private and protected members so generated API docs are comprehensive -->
+                    <additionalparam>-Xdoclint:none -private</additionalparam>
+                    <show>private</show>
+                    <source>${maven.compiler.source}</source>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
             </plugin>
 
             <!-- Maven Jar Plugin -->
@@ -144,4 +151,23 @@
             </plugin>
         </plugins>
     </build>
+    
+    <!-- Reporting configuration makes sure the Javadoc is included in the site generation -->
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <additionalparam>-Xdoclint:none -private</additionalparam>
+                    <show>private</show>
+                    <source>${maven.compiler.source}</source>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
+
+    <!-- Site descriptor and resources will be provided under src/site to customize appearance for GitHub Pages -->
 </project>
