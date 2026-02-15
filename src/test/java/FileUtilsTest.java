@@ -19,7 +19,7 @@ public class FileUtilsTest {
     /** Path used as the destination directory for test copies. */
     private static final Path TEST_DEST_DIR = Paths.get("test_dest");
 
-    @BeforeEach
+
     /** Prepare test fixtures before each test. */
     @BeforeEach
     public void setUp() throws IOException {
@@ -32,7 +32,7 @@ public class FileUtilsTest {
         Files.createDirectories(TEST_DEST_DIR);
     }
 
-    @AfterEach
+
     /** Clean up test fixtures after each test. */
     @AfterEach
     public void tearDown() throws IOException {
@@ -46,7 +46,7 @@ public class FileUtilsTest {
         }
     }
 
-    @Test
+
     /** Test copying a directory where destination contains conflicting files. */
     @Test
     public void testCopyDirectoryWithConflictHandling() throws IOException {
@@ -63,7 +63,7 @@ public class FileUtilsTest {
         assertEquals("Test content", Files.readString(TEST_DEST_DIR.resolve("test_file.txt")));
     }
 
-    @Test
+
     /** Test disk space estimation for copying small test data. */
     @Test
     public void testHasEnoughDiskSpace() throws IOException {
@@ -72,7 +72,7 @@ public class FileUtilsTest {
         assertTrue(FileUtils.hasEnoughDiskSpace(TEST_SOURCE_DIR, TEST_DEST_DIR));
     }
 
-    @Test
+
     /** Test verification of file integrity after copying. */
     @Test
     public void testVerifyIntegrity() throws IOException {
@@ -84,7 +84,7 @@ public class FileUtilsTest {
         assertTrue(FileUtils.verifyIntegrity(TEST_SOURCE_DIR, TEST_DEST_DIR));
     }
 
-    @Test
+
     /** Test recursive deletion of directories. */
     @Test
     public void testDeleteDirectory() throws IOException {
