@@ -29,5 +29,50 @@ target/
 lib/
 *.jar
 *.key
+## Application runtime and generated data (do not commit heavy or runtime state)
+# Ignore the entire app_home directory (projects, DB files, backups, caches)
 app_home/
+
+# Build and IDE
 build/
+.gradle/
+out/
+
+# Maven and Java
+target/
+*.class
+*.war
+*.ear
+
+# Node/npm
+node_modules/
+package-lock.json
+yarn.lock
+
+# Logs and runtime
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database files (H2)
+**/app_home/**/*.mv.db
+**/app_home/**/*.trace.db
+
+# Editor and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Temporary / artifacts
+*.tmp
+*.swp
+cp.txt
+
+# Misc
+.env
+.env.local
+.cache/
+.history
