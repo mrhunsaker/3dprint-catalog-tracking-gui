@@ -20,7 +20,11 @@ public class FileUtilsTest {
     private static final Path TEST_DEST_DIR = Paths.get("test_dest");
 
 
-    /** Prepare test fixtures before each test. */
+    /**
+     * Prepare test fixtures before each test.
+     *
+     * @throws IOException when creating test directories or files fails
+     */
     @BeforeEach
     public void setUp() throws IOException {
         // Prepare test directories and files
@@ -33,7 +37,11 @@ public class FileUtilsTest {
     }
 
 
-    /** Clean up test fixtures after each test. */
+    /**
+     * Clean up test fixtures after each test.
+     *
+     * @throws IOException when removing test directories fails
+     */
     @AfterEach
     public void tearDown() throws IOException {
         // Cleanup test directories after each test
@@ -47,7 +55,11 @@ public class FileUtilsTest {
     }
 
 
-    /** Test copying a directory where destination contains conflicting files. */
+    /**
+     * Test copying a directory where destination contains conflicting files.
+     *
+     * @throws IOException when file operations fail
+     */
     @Test
     public void testCopyDirectoryWithConflictHandling() throws IOException {
         // Verify copying overwrites existing files when appropriate
@@ -64,7 +76,11 @@ public class FileUtilsTest {
     }
 
 
-    /** Test disk space estimation for copying small test data. */
+    /**
+     * Test disk space estimation for copying small test data.
+     *
+     * @throws IOException when checking disk space fails
+     */
     @Test
     public void testHasEnoughDiskSpace() throws IOException {
         // Ensure disk space check returns true for small test data
@@ -73,7 +89,11 @@ public class FileUtilsTest {
     }
 
 
-    /** Test verification of file integrity after copying. */
+    /**
+     * Test verification of file integrity after copying.
+     *
+     * @throws IOException when copying or reading files fails
+     */
     @Test
     public void testVerifyIntegrity() throws IOException {
         // Verify that copied files report as identical
@@ -85,7 +105,11 @@ public class FileUtilsTest {
     }
 
 
-    /** Test recursive deletion of directories. */
+    /**
+     * Test recursive deletion of directories.
+     *
+     * @throws IOException when deletion fails
+     */
     @Test
     public void testDeleteDirectory() throws IOException {
         // Verify deletion of created test directories

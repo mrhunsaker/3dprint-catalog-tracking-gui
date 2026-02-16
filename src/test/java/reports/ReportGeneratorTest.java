@@ -14,8 +14,12 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Unit tests for the {@link ReportGenerator} utility. */
 public class ReportGeneratorTest {
 
+    /** Public no-arg constructor required by the test framework. */
     public ReportGeneratorTest() {}
 
+    /**
+     * Verify the generated project frequency report contains expected keys.
+     */
     @Test
     public void testGenerateProjectFrequencyReport() {
         List<Map<String, Object>> projects = List.of(
@@ -33,6 +37,11 @@ public class ReportGeneratorTest {
         assertEquals(1, report.getJSONObject("least_printed").get("value"));
     }
 
+    /**
+     * Verify exporting a report to JSON writes a readable file.
+     *
+     * @throws IOException when file IO fails
+     */
     @Test
     public void testExportReportToJson() throws IOException {
         JSONObject report = new JSONObject();
@@ -55,6 +64,11 @@ public class ReportGeneratorTest {
         file.delete();
     }
 
+    /**
+     * Verify exporting a report to CSV writes a readable file.
+     *
+     * @throws IOException when file IO fails
+     */
     @Test
     public void testExportReportToCsv() throws IOException {
         JSONObject report = new JSONObject();

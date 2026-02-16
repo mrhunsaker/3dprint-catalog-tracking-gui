@@ -15,8 +15,14 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Unit tests for the {@link JsonImporter} utility. */
 public class JsonImporterTest {
 
+    /** Public no-arg constructor required by the test framework. */
     public JsonImporterTest() {}
 
+    /**
+     * Verify importing a JSON file with a single project entry.
+     *
+     * @throws IOException when writing or reading the temporary file fails
+     */
     @Test
     public void testImportProjectsFromJsonFile() throws IOException {
         JSONArray arr = new JSONArray();
@@ -36,6 +42,11 @@ public class JsonImporterTest {
         Files.deleteIfExists(temp);
     }
 
+    /**
+     * Verify importing an empty JSON array returns an empty list.
+     *
+     * @throws IOException when writing or reading the temporary file fails
+     */
     @Test
     public void testImportEmptyFileReturnsEmptyList() throws IOException {
         Path temp = Files.createTempFile("projects-empty", ".json");

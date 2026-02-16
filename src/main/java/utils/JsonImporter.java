@@ -49,9 +49,9 @@ public class JsonImporter {
                 Map<String, Object> project = new HashMap<>();
 
                 project.put("id", projectJson.optInt("id", -1));
-                project.put("name", projectJson.getString("name"));
+                project.put("name", projectJson.optString("name", ""));
                 project.put("project_type", projectJson.optString("project_type", ""));
-                project.put("file_path", projectJson.getString("file_path"));
+                project.put("file_path", projectJson.optString("file_path", ""));
                 project.put("description", projectJson.optString("description", ""));
                 project.put("created_date", projectJson.optString("created_date", ""));
 
@@ -81,6 +81,19 @@ public class JsonImporter {
         } catch (IOException | JSONException e) {
             return false;
         }
+    }
+
+    /**
+     * Backwards-compatible wrapper expected by tests and callers.
+     * Delegates to {@link #importProjects(String)}.
+     *
+     * @param filePath path to JSON file
+     * @return list of project maps
+     * @throws IOException when file cannot be read
+     * @throws JSONException when parsing fails
+     */
+    public static List<Map<String, Object>> importProjectsFromJsonFile(String filePath) throws IOException, JSONException {
+        return importProjects(filePath);
     }
 
     /**
